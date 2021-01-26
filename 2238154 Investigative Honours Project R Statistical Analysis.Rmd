@@ -745,7 +745,7 @@ dat3 <- dat3[!duplicated(dat3), ]
 dat3 <- dat3 %>% rename("Genotype" = Genotype.y) 
 ```
 
-### Looking at other variables - Data counts
+### Looking at other variables - Data organisation
 ```{r, message=FALSE, warning=FALSE}
 dat3$Heroin_use <- ifelse(dat3$Heroin_use == "use", "1", "0")
 dat3$CC_NonCC <- ifelse(dat3$CC_NonCC == "CC", "1", ifelse(dat3$CC_NonCC == "CT/TT", "0", NA))
@@ -763,7 +763,7 @@ dat3$Genotype <- as.factor(dat3$Genotype)
 str(dat3)
 ```
 
-### Looking at other variables - Data organisation
+### Looking at other variables - Data counts
 ```{r, message=FALSE, warning=FALSE}
 HIV <- dat3 %>% group_by(HCV_status, hiv) %>% summarise(`HIV count` = n_distinct(Participant_ID))
 print(HIV)
