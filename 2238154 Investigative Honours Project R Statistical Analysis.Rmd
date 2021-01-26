@@ -696,7 +696,7 @@ print(summod4)
 ```
 
 ### Predicted probablility of clearance if carrier of B27 and/or B35
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
 newdata = expand.grid(B27= c(0,1), B35 = c(0,1))
 predict(mod4, type = "link", newdata = newdata)
 newdata$`Predicted probability` <- predict(mod4, type = "response", newdata = newdata)
@@ -712,7 +712,7 @@ newdata <- newdata[-c(4:6)]
 print(newdata)
 ```
 
-### Looking at other variables - Observed probablility of clearance
+### Observed probablility of clearance if carrier of B27 and/or B35
 ```{r, message=FALSE, warning=FALSE, eval=FALSE}
 
 o00 <- prop.table(table(x8$HCV_status, x8$B27 == 0 & x8$B35 == 0),2)["1", "TRUE"]
