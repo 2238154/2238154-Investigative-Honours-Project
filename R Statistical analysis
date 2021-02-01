@@ -1,0 +1,948 @@
+---
+title: "Investigative Honours Project R Statistical Analysis"
+author: '2238154'
+output: html_document
+---
+# HLA Data
+### Data import
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+raw_dat <- read_csv("filtered_HLA_patients.csv")
+raw_dat_carriers <- read_csv("filtered_HLA_patients_presence_absence.csv")
+```
+
+### Data organisation
+```{r, message=FALSE, warning=FALSE}
+library(plyr)
+rename_raw_dat <- rename(raw_dat, c("X1"="Row", "record_id"="Participant_ID", "sc"="HCV_status"))
+rename_raw_dat_carriers <- rename(raw_dat_carriers, c("X1"="Row", "record_id"="Participant_ID", "sc"="HCV_status"))
+library(tidyr)
+reshape_raw_dat <- rename_raw_dat %>% pivot_longer(!c(Row, Participant_ID, HCV_status), names_to = "Locus_allele", values_to = "Genotype")
+reshape_raw_dat_carriers <- rename_raw_dat_carriers %>% pivot_longer(!c(Row, Participant_ID, HCV_status), names_to = "Locus_allele", values_to = "Carrier")
+```
+
+### Categorise Data by HLA locus
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyverse)
+dpa1_category <- str_detect(reshape_raw_dat$Locus_allele, "dpa1_")
+dpb1_category <- str_detect(reshape_raw_dat$Locus_allele, "dpb1_")
+dqa1_category <- str_detect(reshape_raw_dat$Locus_allele, "dqa1_")
+dqb1_category <- str_detect(reshape_raw_dat$Locus_allele, "dqb1_")
+drb5_category <- str_detect(reshape_raw_dat$Locus_allele, "drb5_")
+hla_a_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_a")
+hla_b_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_b")
+hla_c_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_c")
+hla_drb1_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_drb1")
+hla_drb3_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_drb3")
+hla_drb4_category <- str_detect(reshape_raw_dat$Locus_allele, "hla_drb4")
+new_columns_raw_dat <- cbind.data.frame(reshape_raw_dat, dpa1 = dpa1_category, dpb1 = dpb1_category,  dqa1 = dqa1_category,  dqb1 = dqb1_category, drb5 = drb5_category, hla_a = hla_a_category, hla_b = hla_b_category, hla_c = hla_c_category, hla_drb1 = hla_drb1_category, hla_drb3 = hla_drb3_category,  hla_drb4 = hla_drb4_category)
+new_column_raw_dat <- new_columns_raw_dat %>% mutate(Locus = ifelse(dpa1 == "TRUE" &	dpb1 == "FALSE" & dqa1 == "FALSE"& dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dpa1",ifelse(dpa1 == "FALSE" & dpb1 == "TRUE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & 	hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dpb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "TRUE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dqa1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "TRUE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dqb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "TRUE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "drb5",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "TRUE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_a",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "TRUE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_b",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "TRUE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_c",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "TRUE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_drb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "TRUE"& hla_drb4 == "FALSE", "hla_drb3",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "TRUE", "hla_drb4", ""))))))))))))
+new_allele_column_raw_dat <- new_column_raw_dat  %>% mutate(Allele1 = str_replace(Locus_allele, "hla_a_", "")) %>% mutate(Allele2 = str_replace(Allele1, "hla_b_", "")) %>%  mutate(Allele3 = str_replace(Allele2, "hla_c_", "")) %>%  mutate(Allele4 = str_replace(Allele3, "hla_drb1_", "")) %>%  mutate(Allele5 = str_replace(Allele4, "hla_drb3_", "")) %>%  mutate(Allele6 = str_replace(Allele5, "hla_drb4_", "")) %>%  mutate(Allele7 = str_replace(Allele6, "dpa1_", "")) %>%  mutate(Allele8 = str_replace(Allele7, "dpb1_", "")) %>%  mutate(Allele9 = str_replace(Allele8, "dqa1_", "")) %>%  mutate(Allele10 = str_replace(Allele9, "dqb1_", "")) %>%  mutate(Allele = str_replace(Allele10, "drb5_", "")) 
+new_allele_column_raw_dat[c(6:16,18:27)] <- list(NULL)
+dpa1_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "dpa1_")
+dpb1_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "dpb1_")
+dqa1_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "dqa1_")
+dqb1_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "dqb1_")
+drb5_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "drb5_")
+hla_a_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_a")
+hla_b_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_b")
+hla_c_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_c")
+hla_drb1_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_drb1")
+hla_drb3_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_drb3")
+hla_drb4_category <- str_detect(reshape_raw_dat_carriers$Locus_allele, "hla_drb4")
+new_columns_raw_dat_carriers <- cbind.data.frame(reshape_raw_dat_carriers, dpa1 = dpa1_category, dpb1 = dpb1_category,  dqa1 = dqa1_category,  dqb1 = dqb1_category, drb5 = drb5_category, hla_a = hla_a_category, hla_b = hla_b_category, hla_c = hla_c_category, hla_drb1 = hla_drb1_category, hla_drb3 = hla_drb3_category,  hla_drb4 = hla_drb4_category)
+new_column_raw_dat_carriers <- new_columns_raw_dat_carriers %>% mutate(Locus = ifelse(dpa1 == "TRUE" &	dpb1 == "FALSE" & dqa1 == "FALSE"& dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dpa1",ifelse(dpa1 == "FALSE" & dpb1 == "TRUE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & 	hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dpb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "TRUE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dqa1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "TRUE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "dqb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "TRUE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "drb5",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "TRUE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_a",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "TRUE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_b",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "TRUE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_c",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "TRUE"& hla_drb3 == "FALSE"& hla_drb4 == "FALSE", "hla_drb1",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "TRUE"& hla_drb4 == "FALSE", "hla_drb3",ifelse(dpa1 == "FALSE" & dpb1 == "FALSE" & dqa1 == "FALSE" & dqb1 == "FALSE"& drb5 == "FALSE"& hla_a == "FALSE" & hla_b == "FALSE" & hla_c == "FALSE"& hla_drb1 == "FALSE"& hla_drb3 == "FALSE"& hla_drb4 == "TRUE", "hlla_drb4", ""))))))))))))
+new_allele_column_raw_dat_carriers <- new_column_raw_dat_carriers  %>%   mutate(Allele1 = str_replace(Locus_allele, "hla_a_", "")) %>%  mutate(Allele2 = str_replace(Allele1, "hla_b_", "")) %>%  mutate(Allele3 = str_replace(Allele2, "hla_c_", "")) %>%  mutate(Allele4 = str_replace(Allele3, "hla_drb1_", "")) %>%  mutate(Allele5 = str_replace(Allele4, "hla_drb3_", "")) %>%  mutate(Allele6 = str_replace(Allele5, "hla_drb4_", "")) %>%
+  mutate(Allele7 = str_replace(Allele6, "dpa1_", "")) %>%  mutate(Allele8 = str_replace(Allele7, "dpb1_", "")) %>%  mutate(Allele9 = str_replace(Allele8, "dqa1_", "")) %>%  mutate(Allele10 = str_replace(Allele9, "dqb1_", "")) %>%  mutate(Allele = str_replace(Allele10, "drb5_", "")) 
+new_allele_column_raw_dat_carriers[c(6:16,18:27)] <- list(NULL)
+```
+
+### Checking which participants have no data for each HLA
+```{r, message=FALSE, warning=FALSE}
+missing_dat <- new_allele_column_raw_dat %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Genotype))  %>% filter(sum == "0")
+missing_dat_carrier <- new_allele_column_raw_dat_carriers %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Carrier))  %>% filter(sum == "0")
+print(missing_dat)
+```
+
+### Exluding missing data
+```{r, message=FALSE, warning=FALSE}
+sum_dat <- new_allele_column_raw_dat %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Genotype)) 
+organising_dat <- merge(new_allele_column_raw_dat, sum_dat, by = c("Participant_ID", "Row", "Locus"), all.x = TRUE, all.y = TRUE) 
+organised_dat <- organising_dat %>% filter(sum != 0)
+sum_dat_carriers <- new_allele_column_raw_dat_carriers %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Carrier)) 
+organising_dat_carriers <- merge(new_allele_column_raw_dat_carriers, sum_dat_carriers, by = c("Participant_ID", "Row", "Locus"), all.x = TRUE, all.y = TRUE) 
+organised_dat_carriers <- organising_dat_carriers %>% filter(sum != 0)
+dat <- cbind(organised_dat,Carrier = organised_dat_carriers$Carrier)
+dat$sum <- NULL
+dat$Locus_allele <- NULL
+```
+
+### Data counts
+```{r, message=FALSE, warning=FALSE}
+participants_per_status <- dat %>% group_by(HCV_status) %>% summarise(`Participant count` = n_distinct(Row))
+knitr::kable(participants_per_status[1:2, 1:2], caption = 'Number of participants with and without HCV.')
+participants_per_locus <- dat %>% group_by(Locus) %>% summarise(`Carrier count` = n_distinct(Row))
+knitr::kable(participants_per_locus[1:11, 1:2], caption = 'Number of data per hla.')
+alleles_per_locus <- dat %>% group_by(Locus) %>% summarise(`Allele count` = n_distinct(Allele))
+knitr::kable(alleles_per_locus[1:11, 1:2], caption = 'Number of alleles per hla.')
+heterozygotes <- dat %>% group_by(Locus) %>% filter(Genotype == 1) %>% summarise_at(vars(Genotype),list("heterozygotes" = sum))
+print(heterozygotes)
+homozygotes0 <- dat %>% group_by(Locus) %>% filter(Genotype == 2) %>% summarise_at(vars(Genotype),list("sum" = sum))
+homozygotes1 <- data.frame(homozygotes = homozygotes0$sum/2)
+homozygotes <- cbind(homozygotes0,homozygotes1)
+homozygotes$sum <- NULL
+print(homozygotes)
+```
+
+### Allele frequencies per HLA locus
+```{r, message=FALSE, warning=FALSE, dpi=200}
+dpa1_dat <- dat %>% filter(Locus == "dpa1")
+dpb1_dat <- dat %>% filter(Locus == "dpb1")
+dqa1_dat <- dat %>% filter(Locus == "dqa1")
+dqb1_dat <- dat %>% filter(Locus == "dqb1")
+drb5_dat <- dat %>% filter(Locus == "drb5")
+hla_a_dat <- dat %>% filter(Locus == "hla_a")
+hla_b_dat <- dat %>% filter(Locus == "hla_b") 
+hla_c_dat <- dat %>% filter(Locus == "hla_c")
+hla_drb1_dat <- dat %>% filter(Locus == "hla_drb1")
+hla_drb3_dat <- dat %>% filter(Locus == "hla_drb3")
+hla_drb4_dat <- dat %>% filter(Locus == "hla_drb4")
+dpa1_count <- dpa1_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("dpa1 Allele count" = sum))
+dpb1_count <- dpb1_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("dpb1 Allele count" = sum))
+dqa1_count <- dqa1_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("dqa1 Allele count" = sum))
+dqb1_count <- dqb1_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("dqb1 Allele count" = sum))
+drb5_count <- drb5_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("drb5 Allele count" = sum))
+hla_a_count <- hla_a_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_a Allele count" = sum))
+hla_b_count <- hla_b_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_b Allele count" = sum))
+hla_c_count <- hla_c_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_c Allele count" = sum))
+hla_drb1_count <- hla_drb1_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_drb1 Allele count" = sum))
+hla_drb3_count <- hla_drb3_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_drb3 Allele count" = sum))
+hla_drb4_count <- hla_drb4_dat %>% group_by(Allele) %>% summarise_at(vars(Genotype),list("hla_drb4 Allele count" = sum))
+dpa1_total_allele_pop <- dpa1_count %>% summarise("Total dpa1 allele population" = sum(`dpa1 Allele count`))
+dpb1_total_allele_pop <- dpb1_count %>% summarise("Total dpb1 allele population" = sum(`dpb1 Allele count`))
+dqa1_total_allele_pop <- dqa1_count %>% summarise("Total dqa1 allele population" = sum(`dqa1 Allele count`))
+dqb1_total_allele_pop <- dqb1_count %>% summarise("Total dqb1 allele population" = sum(`dqb1 Allele count`))
+drb5_total_allele_pop <- drb5_count %>% summarise("Total drb5 allele population" = sum(`drb5 Allele count`))
+hla_a_total_allele_pop <- hla_a_count %>% summarise("Total hla_a allele population" = sum(`hla_a Allele count`))
+hla_b_total_allele_pop <- hla_b_count %>% summarise("Total hla_b allele population" = sum(`hla_b Allele count`))
+hla_c_total_allele_pop <- hla_c_count %>% summarise("Total hla_c allele population" = sum(`hla_c Allele count`))
+hla_drb1_total_allele_pop <- hla_drb1_count %>% summarise("Total hla_drb1 allele population" = sum(`hla_drb1 Allele count`))
+hla_drb3_total_allele_pop <- hla_drb3_count %>% summarise("Total hla_drb3 allele population" = sum(`hla_drb3 Allele count`))
+hla_drb4_total_allele_pop <- hla_drb4_count %>% summarise("Total hla_drb4 allele population" = sum(`hla_drb4 Allele count`))
+allele_pop <- cbind(dpa1_total_allele_pop,dpb1_total_allele_pop,dqa1_total_allele_pop,dqb1_total_allele_pop,drb5_total_allele_pop,hla_a_total_allele_pop,hla_b_total_allele_pop,hla_c_total_allele_pop,hla_drb1_total_allele_pop,hla_drb3_total_allele_pop,hla_drb4_total_allele_pop)
+knitr::kable(allele_pop[1, 1:11], caption = 'Total number of alleles per locus.')
+dpa1_frequency <- dpa1_count %>% summarise("dpa1 frequency" = `dpa1 Allele count`/dpa1_total_allele_pop$`Total dpa1 allele population`)
+dpb1_frequency <- dpb1_count %>% summarise("dpb1 frequency" = `dpb1 Allele count`/dpb1_total_allele_pop$`Total dpb1 allele population`)
+dqa1_frequency <- dqa1_count %>% summarise("dqa1 frequency" = `dqa1 Allele count`/dqa1_total_allele_pop$`Total dqa1 allele population`)
+dqb1_frequency <- dqb1_count %>% summarise("dqb1 frequency" = `dqb1 Allele count`/dqb1_total_allele_pop$`Total dqb1 allele population`)
+drb5_frequency <- drb5_count %>% summarise("drb5 frequency" = `drb5 Allele count`/drb5_total_allele_pop$`Total drb5 allele population`)
+hla_a_frequency <- hla_a_count %>% summarise("hla_a frequency" = `hla_a Allele count`/hla_a_total_allele_pop$`Total hla_a allele population`)
+hla_b_frequency <- hla_b_count %>% summarise("hla_b frequency" = `hla_b Allele count`/hla_b_total_allele_pop$`Total hla_b allele population`)
+hla_c_frequency <- hla_c_count %>% summarise("hla_c frequency" = `hla_c Allele count`/hla_c_total_allele_pop$`Total hla_c allele population`)
+hla_drb1_frequency <- hla_drb1_count %>% summarise("hla_drb1 frequency" = `hla_drb1 Allele count`/hla_drb1_total_allele_pop$`Total hla_drb1 allele population`)
+hla_drb3_frequency <- hla_drb3_count %>% summarise("hla_drb3 frequency" = `hla_drb3 Allele count`/hla_drb3_total_allele_pop$`Total hla_drb3 allele population`)
+hla_drb4_frequency <- hla_drb4_count %>% summarise("hla_drb4 frequency" = `hla_drb4 Allele count`/hla_drb4_total_allele_pop$`Total hla_drb4 allele population`)
+dpa1_total_frequency <- dpa1_frequency %>% summarise("Total dpa1 frequency" = sum(`dpa1 frequency`))
+dpb1_total_frequency <- dpb1_frequency %>% summarise("Total dpb1 frequency" = sum(`dpb1 frequency`))
+dqa1_total_frequency <- dqa1_frequency %>% summarise("Total dqa1 frequency" = sum(`dqa1 frequency`))
+dqb1_total_frequency <- dqb1_frequency %>% summarise("Total dqb1 frequency" = sum(`dqb1 frequency`))
+drb5_total_frequency <- drb5_frequency %>% summarise("Total drb5 frequency" = sum(`drb5 frequency`))
+hla_a_total_frequency <- hla_a_frequency %>% summarise("Total hla_a frequency" = sum(`hla_a frequency`))
+hla_b_total_frequency <- hla_b_frequency %>% summarise("Total hla_b frequency" = sum(`hla_b frequency`))
+hla_c_total_frequency <- hla_c_frequency %>% summarise("Total hla_c frequency" = sum(`hla_c frequency`))
+hla_drb1_total_frequency <- hla_drb1_frequency %>% summarise("Total hla_drb1 frequency" = sum(`hla_drb1 frequency`))
+hla_drb3_total_frequency <- hla_drb3_frequency %>% summarise("Total hla_drb3 frequency" = sum(`hla_drb3 frequency`))
+hla_drb4_total_frequency <- hla_drb4_frequency %>% summarise("Total hla_drb4 frequency" = sum(`hla_drb4 frequency`))
+allele_frequency <- cbind(dpa1_total_frequency,dpb1_total_frequency,dqa1_total_frequency,dqb1_total_frequency,drb5_total_frequency,hla_a_total_frequency,hla_b_total_frequency,hla_c_total_frequency,hla_drb1_total_frequency,hla_drb3_total_frequency,hla_drb4_total_frequency)
+knitr::kable(allele_frequency[1, 1:11], caption = 'Sum of allele frequency per locus.')
+dpa1_count_and_frequency <- cbind(dpa1_count,dpa1_frequency)
+knitr::kable(dpa1_count_and_frequency[1:2, 1:3], caption = 'dpa1 allele count & frequency.')
+dpb1_count_and_frequency <- cbind(dpb1_count,dpb1_frequency)
+knitr::kable(dpb1_count_and_frequency[1:14, 1:3], caption = 'dpb1 allele count & frequency.')
+dqa1_count_and_frequency <- cbind(dqa1_count,dqa1_frequency)
+knitr::kable(dqa1_count_and_frequency[1:5, 1:3], caption = 'dqa1 allele count & frequency.')
+dqb1_count_and_frequency <- cbind(dqb1_count,dqb1_frequency)
+knitr::kable(dqb1_count_and_frequency[1:5, 1:3], caption = 'dqb1 allele count & frequency.')
+drb5_count_and_frequency <- cbind(drb5_count,drb5_frequency)
+knitr::kable(drb5_count_and_frequency[1:2, 1:3], caption = 'drb5 allele count & frequency.')
+hla_a_count_and_frequency <- cbind(hla_a_count,hla_a_frequency)
+knitr::kable(hla_a_count_and_frequency[1:17, 1:3], caption = 'hla_a allele count & frequency.')
+hla_b_count_and_frequency <- cbind(hla_b_count,hla_b_frequency)
+knitr::kable(hla_b_count_and_frequency[1:25, 1:3], caption = 'hla_b allele count & frequency.')
+hla_c_count_and_frequency <- cbind(hla_c_count,hla_c_frequency)
+knitr::kable(hla_c_count_and_frequency[1:17, 1:3], caption = 'hla_c allele count & frequency.')
+hla_drb1_count_and_frequency <- cbind(hla_drb1_count,hla_drb1_frequency)
+knitr::kable(hla_drb1_count_and_frequency[1:16, 1:3], caption = 'hla_drb1 allele count & frequency.')
+hla_drb3_count_and_frequency <- cbind(hla_drb3_count,hla_drb3_frequency)
+knitr::kable(hla_drb3_count_and_frequency[1:3, 1:3], caption = 'hla_drb3 allele count & frequency.')
+hla_drb4_count_and_frequency <- cbind(hla_drb4_count,hla_drb4_frequency)
+knitr::kable(hla_drb4_count_and_frequency[1:1, 1:3], caption = 'hla_drb4 allele count & frequency.')
+dpa1_count_per_status <- dpa1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("dpa1 Allele frequency" = sum))
+dpb1_count_per_status <- dpb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("dpb1 Allele frequency" = sum))
+dqa1_count_per_status <- dqa1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("dqa1 Allele frequency" = sum))
+dqb1_count_per_status <- dqb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("dqb1 Allele frequency" = sum))
+drb5_count_per_status <- drb5_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("drb5 Allele frequency" = sum))
+hla_a_count_per_status <- hla_a_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_a Allele frequency" = sum))
+hla_b_count_per_status <- hla_b_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_b Allele frequency" = sum))
+hla_c_count_per_status <- hla_c_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_c Allele frequency" = sum))
+hla_drb1_count_per_status <- hla_drb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_drb1 Allele frequency" = sum))
+hla_drb3_count_per_status <- hla_drb3_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_drb3 Allele frequency" = sum))
+hla_drb4_count_per_status <- hla_drb4_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Genotype),list("hla_drb4 Allele frequency" = sum))
+dpa1_frequency_per_status <- dpa1_count_per_status %>% summarise("dpa1 frequency" = `dpa1 Allele frequency`/dpa1_total_allele_pop$`Total dpa1 allele population`)
+dpb1_frequency_per_status <- dpb1_count_per_status %>% summarise("dpb1 frequency" = `dpb1 Allele frequency`/dpb1_total_allele_pop$`Total dpb1 allele population`)
+dqa1_frequency_per_status <- dqa1_count_per_status %>% summarise("dqa1 frequency" = `dqa1 Allele frequency`/dqa1_total_allele_pop$`Total dqa1 allele population`)
+dqb1_frequency_per_status <- dqb1_count_per_status %>% summarise("dqb1 frequency" = `dqb1 Allele frequency`/dqb1_total_allele_pop$`Total dqb1 allele population`)
+drb5_frequency_per_status <- drb5_count_per_status %>% summarise("drb5 frequency" = `drb5 Allele frequency`/drb5_total_allele_pop$`Total drb5 allele population`)
+hla_a_frequency_per_status <- hla_a_count_per_status %>% summarise("hla_a frequency" = `hla_a Allele frequency`/hla_a_total_allele_pop$`Total hla_a allele population`)
+hla_b_frequency_per_status <- hla_b_count_per_status %>% summarise("hla_b frequency" = `hla_b Allele frequency`/hla_b_total_allele_pop$`Total hla_b allele population`)
+hla_c_frequency_per_status <- hla_c_count_per_status %>% summarise("hla_c frequency" = `hla_c Allele frequency`/hla_c_total_allele_pop$`Total hla_c allele population`)
+hla_drb1_frequency_per_status <- hla_drb1_count_per_status %>% summarise("hla_drb1 frequency" = `hla_drb1 Allele frequency`/hla_drb1_total_allele_pop$`Total hla_drb1 allele population`)
+hla_drb3_frequency_per_status <- hla_drb3_count_per_status %>% summarise("hla_drb3 frequency" = `hla_drb3 Allele frequency`/hla_drb3_total_allele_pop$`Total hla_drb3 allele population`)
+hla_drb4_frequency_per_status <- hla_drb4_count_per_status %>% summarise("hla_drb4 frequency" = `hla_drb4 Allele frequency`/hla_drb4_total_allele_pop$`Total hla_drb4 allele population`)
+dpa1_count_and_frequency_per_status <- cbind(dpa1_count_per_status, dpa1_frequency_per_status)
+dpb1_count_and_frequency_per_status <- cbind(dpb1_count_per_status, dpb1_frequency_per_status)
+dqa1_count_and_frequency_per_status <- cbind(dqa1_count_per_status, dqa1_frequency_per_status)
+dqb1_count_and_frequency_per_status <- cbind(dqb1_count_per_status, dqb1_frequency_per_status)
+drb5_count_and_frequency_per_status <- cbind(drb5_count_per_status, drb5_frequency_per_status)
+hla_a_count_and_frequency_per_status <- cbind(hla_a_count_per_status, hla_a_frequency_per_status)
+hla_b_count_and_frequency_per_status <- cbind(hla_b_count_per_status, hla_b_frequency_per_status)
+hla_c_count_and_frequency_per_status <- cbind(hla_c_count_per_status, hla_c_frequency_per_status)
+hla_drb1_count_and_frequency_per_status <- cbind(hla_drb1_count_per_status, hla_drb1_frequency_per_status)
+hla_drb3_count_and_frequency_per_status <- cbind(hla_drb3_count_per_status, hla_drb3_frequency_per_status)
+hla_drb4_count_and_frequency_per_status <- cbind(hla_drb4_count_per_status, hla_drb4_frequency_per_status)
+
+# Plotting allele frequencies
+library(ggplot2)
+library(wesanderson)
+
+dpa1_count_and_frequency_per_status$`HCV_status`<-as.factor(dpa1_count_and_frequency_per_status$`HCV_status`)
+q1 <- ggplot(dpa1_count_and_frequency_per_status, aes(`Allele...1`, `dpa1 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q1)
+dpb1_count_and_frequency_per_status$`HCV_status`<-as.factor(dpb1_count_and_frequency_per_status$`HCV_status`)
+q2 <- ggplot(dpb1_count_and_frequency_per_status, aes(`Allele...1`, `dpb1 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q2)
+dqa1_count_and_frequency_per_status$`HCV_status`<-as.factor(dqa1_count_and_frequency_per_status$`HCV_status`)
+q3 <- ggplot(dqa1_count_and_frequency_per_status, aes(`Allele...1`, `dqa1 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q3)
+dqb1_count_and_frequency_per_status$`HCV_status`<-as.factor(dqb1_count_and_frequency_per_status$`HCV_status`)
+q4 <- ggplot(dqb1_count_and_frequency_per_status, aes(`Allele...1`, `dqb1 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q4)
+drb5_count_and_frequency_per_status$`HCV_status`<-as.factor(drb5_count_and_frequency_per_status$`HCV_status`)
+q5 <- ggplot(drb5_count_and_frequency_per_status, aes(`Allele...1`, `drb5 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q5)
+hla_a_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_a_count_and_frequency_per_status$`HCV_status`)
+q6 <- ggplot(hla_a_count_and_frequency_per_status, aes(`Allele...1`, `hla_a frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q6)
+hla_b_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_b_count_and_frequency_per_status$`HCV_status`)
+q7 <- ggplot(hla_b_count_and_frequency_per_status, aes(`Allele...1`, `hla_b frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q7)
+hla_c_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_c_count_and_frequency_per_status$`HCV_status`)
+q8 <- ggplot(hla_c_count_and_frequency_per_status, aes(`Allele...1`, `hla_c frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q8)
+hla_drb1_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_drb1_count_and_frequency_per_status$`HCV_status`)
+q9 <- ggplot(hla_drb1_count_and_frequency_per_status, aes(`Allele...1`, `hla_drb1 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q9)
+hla_drb3_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_drb3_count_and_frequency_per_status$`HCV_status`)
+q10 <- ggplot(hla_drb3_count_and_frequency_per_status, aes(`Allele...1`, `hla_drb3 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q10)
+hla_drb4_count_and_frequency_per_status$`HCV_status`<-as.factor(hla_drb4_count_and_frequency_per_status$`HCV_status`)
+q11 <- ggplot(hla_drb4_count_and_frequency_per_status, aes(`Allele...1`, `hla_drb4 frequency`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Allele frequency")
+print(q11)
+```
+
+### Carrier frequencies per HLA locus
+```{r, message=FALSE, warning=FALSE, dpi=200}
+dpa1_count_carrier <- dpa1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dpa1 Carrier count" = sum))
+dpb1_count_carrier <- dpb1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dpb1 Carrier count" = sum))
+dqa1_count_carrier <- dqa1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dqa1 Carrier count" = sum))
+dqb1_count_carrier <- dqb1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dqb1 Carrier count" = sum))
+drb5_count_carrier <- drb5_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("drb5 Carrier count" = sum))
+hla_a_count_carrier <- hla_a_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_a Carrier count" = sum))
+hla_b_count_carrier <- hla_b_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_b Carrier count" = sum))
+hla_c_count_carrier <- hla_c_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_c Carrier count" = sum))
+hla_drb1_count_carrier <- hla_drb1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_drb1 Carrier count" = sum))
+hla_drb3_count_carrier <- hla_drb3_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_drb3 Carrier count" = sum))
+hla_drb4_count_carrier <- hla_drb4_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("hla_drb4 Carrier count" = sum))
+dpa1_total_pop_carrier <- dpa1_count_carrier %>% summarise("Total dpa1 carrier population" = sum(`dpa1 Carrier count`))
+dpb1_total_pop_carrier <- dpb1_count_carrier %>% summarise("Total dpb1 carrier population" = sum(`dpb1 Carrier count`))
+dqa1_total_pop_carrier <- dqa1_count_carrier %>% summarise("Total dqa1 carrier population" = sum(`dqa1 Carrier count`))
+dqb1_total_pop_carrier <- dqb1_count_carrier %>% summarise("Total dqb1 carrier population" = sum(`dqb1 Carrier count`))
+drb5_total_pop_carrier <- drb5_count_carrier %>% summarise("Total drb5 carrier population" = sum(`drb5 Carrier count`))
+hla_a_total_pop_carrier <- hla_a_count_carrier %>% summarise("Total hla_a carrier population" = sum(`hla_a Carrier count`))
+hla_b_total_pop_carrier <- hla_b_count_carrier %>% summarise("Total hla_b carrier population" = sum(`hla_b Carrier count`))
+hla_c_total_pop_carrier <- hla_c_count_carrier %>% summarise("Total hla_c carrier population" = sum(`hla_c Carrier count`))
+hla_drb1_total_pop_carrier <- hla_drb1_count_carrier %>% summarise("Total hla_drb1 carrier population" = sum(`hla_drb1 Carrier count`))
+hla_drb3_total_pop_carrier <- hla_drb3_count_carrier %>% summarise("Total hla_drb3 carrier population" = sum(`hla_drb3 Carrier count`))
+hla_drb4_total_pop_carrier <- hla_drb4_count_carrier %>% summarise("Total hla_drb4 carrier population" = sum(`hla_drb4 Carrier count`))
+allele_pop_carrier <- cbind(dpa1_total_pop_carrier,dpb1_total_pop_carrier,dqa1_total_pop_carrier,dqb1_total_pop_carrier,drb5_total_pop_carrier,hla_a_total_pop_carrier,hla_b_total_pop_carrier,hla_c_total_pop_carrier,hla_drb1_total_pop_carrier,hla_drb3_total_pop_carrier,hla_drb4_total_pop_carrier)
+knitr::kable(allele_pop_carrier[1, 1:11], caption = 'Total number of carriers per locus.')
+dpa1_frequency_carrier <- dpa1_count_carrier %>% summarise("dpa1 frequency_carrier" = `dpa1 Carrier count`/dpa1_total_pop_carrier$`Total dpa1 carrier population`)
+dpb1_frequency_carrier <- dpb1_count_carrier %>% summarise("dpb1 frequency_carrier" = `dpb1 Carrier count`/dpb1_total_pop_carrier$`Total dpb1 carrier population`)
+dqa1_frequency_carrier <- dqa1_count_carrier %>% summarise("dqa1 frequency_carrier" = `dqa1 Carrier count`/dqa1_total_pop_carrier$`Total dqa1 carrier population`)
+dqb1_frequency_carrier <- dqb1_count_carrier %>% summarise("dqb1 frequency_carrier" = `dqb1 Carrier count`/dqb1_total_pop_carrier$`Total dqb1 carrier population`)
+drb5_frequency_carrier <- drb5_count_carrier %>% summarise("drb5 frequency_carrier" = `drb5 Carrier count`/drb5_total_pop_carrier$`Total drb5 carrier population`)
+hla_a_frequency_carrier <- hla_a_count_carrier %>% summarise("hla_a frequency_carrier" = `hla_a Carrier count`/hla_a_total_pop_carrier$`Total hla_a carrier population`)
+hla_b_frequency_carrier <- hla_b_count_carrier %>% summarise("hla_b frequency_carrier" = `hla_b Carrier count`/hla_b_total_pop_carrier$`Total hla_b carrier population`)
+hla_c_frequency_carrier <- hla_c_count_carrier %>% summarise("hla_c frequency_carrier" = `hla_c Carrier count`/hla_c_total_pop_carrier$`Total hla_c carrier population`)
+hla_drb1_frequency_carrier <- hla_drb1_count_carrier %>% summarise("hla_drb1 frequency_carrier" = `hla_drb1 Carrier count`/hla_drb1_total_pop_carrier$`Total hla_drb1 carrier population`)
+hla_drb3_frequency_carrier <- hla_drb3_count_carrier %>% summarise("hla_drb3 frequency_carrier" = `hla_drb3 Carrier count`/hla_drb3_total_pop_carrier$`Total hla_drb3 carrier population`)
+hla_drb4_frequency_carrier <- hla_drb4_count_carrier %>% summarise("hla_drb4 frequency_carrier" = `hla_drb4 Carrier count`/hla_drb4_total_pop_carrier$`Total hla_drb4 carrier population`)
+dpa1_total_frequency_carrier <- dpa1_frequency_carrier %>% summarise("Total dpa1 frequency_carrier" = sum(`dpa1 frequency_carrier`))
+dpb1_total_frequency_carrier <- dpb1_frequency_carrier %>% summarise("Total dpb1 frequency_carrier" = sum(`dpb1 frequency_carrier`))
+dqa1_total_frequency_carrier <- dqa1_frequency_carrier %>% summarise("Total dqa1 frequency_carrier" = sum(`dqa1 frequency_carrier`))
+dqb1_total_frequency_carrier <- dqb1_frequency_carrier %>% summarise("Total dqb1 frequency_carrier" = sum(`dqb1 frequency_carrier`))
+drb5_total_frequency_carrier <- drb5_frequency_carrier %>% summarise("Total drb5 frequency_carrier" = sum(`drb5 frequency_carrier`))
+hla_a_total_frequency_carrier <- hla_a_frequency_carrier %>% summarise("Total hla_a frequency_carrier" = sum(`hla_a frequency_carrier`))
+hla_b_total_frequency_carrier <- hla_b_frequency_carrier %>% summarise("Total hla_b frequency_carrier" = sum(`hla_b frequency_carrier`))
+hla_c_total_frequency_carrier <- hla_c_frequency_carrier %>% summarise("Total hla_c frequency_carrier" = sum(`hla_c frequency_carrier`))
+hla_drb1_total_frequency_carrier <- hla_drb1_frequency_carrier %>% summarise("Total hla_drb1 frequency_carrier" = sum(`hla_drb1 frequency_carrier`))
+hla_drb3_total_frequency_carrier <- hla_drb3_frequency_carrier %>% summarise("Total hla_drb3 frequency_carrier" = sum(`hla_drb3 frequency_carrier`))
+hla_drb4_total_frequency_carrier <- hla_drb4_frequency_carrier %>% summarise("Total hla_drb4 frequency_carrier" = sum(`hla_drb4 frequency_carrier`))
+allele_frequency_carrier <- cbind(dpa1_total_frequency_carrier,dpb1_total_frequency_carrier,dqa1_total_frequency_carrier,dqb1_total_frequency_carrier,drb5_total_frequency_carrier,hla_a_total_frequency_carrier,hla_b_total_frequency_carrier,hla_c_total_frequency_carrier,hla_drb1_total_frequency_carrier,hla_drb3_total_frequency_carrier,hla_drb4_total_frequency_carrier)
+knitr::kable(allele_frequency_carrier[1, 1:11], caption = 'Sum of carrier frequency per locus.')
+dpa1_count_frequency_carrier <- cbind(dpa1_count_carrier,dpa1_frequency_carrier)
+knitr::kable(dpa1_count_frequency_carrier[1:2, 1:3], caption = 'dpa1 Carrier count & frequency_carrier.')
+dpb1_count_frequency_carrier <- cbind(dpb1_count_carrier,dpb1_frequency_carrier)
+knitr::kable(dpb1_count_frequency_carrier[1:14, 1:3], caption = 'dpb1 Carrier count & frequency_carrier.')
+dqa1_count_frequency_carrier <- cbind(dqa1_count_carrier,dqa1_frequency_carrier)
+knitr::kable(dqa1_count_frequency_carrier[1:5, 1:3], caption = 'dqa1 Carrier count & frequency_carrier.')
+dqb1_count_frequency_carrier <- cbind(dqb1_count_carrier,dqb1_frequency_carrier)
+knitr::kable(dqb1_count_frequency_carrier[1:5, 1:3], caption = 'dqb1 Carrier count & frequency_carrier.')
+drb5_count_frequency_carrier <- cbind(drb5_count_carrier,drb5_frequency_carrier)
+knitr::kable(drb5_count_frequency_carrier[1:2, 1:3], caption = 'drb5 Carrier count & frequency_carrier.')
+hla_a_count_frequency_carrier <- cbind(hla_a_count_carrier,hla_a_frequency_carrier)
+knitr::kable(hla_a_count_frequency_carrier[1:17, 1:3], caption = 'hla_a Carrier count & frequency_carrier.')
+hla_b_count_frequency_carrier <- cbind(hla_b_count_carrier,hla_b_frequency_carrier)
+knitr::kable(hla_b_count_frequency_carrier[1:25, 1:3], caption = 'hla_b Carrier count & frequency_carrier.')
+hla_c_count_frequency_carrier <- cbind(hla_c_count_carrier,hla_c_frequency_carrier)
+knitr::kable(hla_c_count_frequency_carrier[1:17, 1:3], caption = 'hla_c Carrier count & frequency_carrier.')
+hla_drb1_count_frequency_carrier <- cbind(hla_drb1_count_carrier,hla_drb1_frequency_carrier)
+knitr::kable(hla_drb1_count_frequency_carrier[1:16, 1:3], caption = 'hla_drb1 Carrier count & frequency_carrier.')
+hla_drb3_count_frequency_carrier <- cbind(hla_drb3_count_carrier,hla_drb3_frequency_carrier)
+knitr::kable(hla_drb3_count_frequency_carrier[1:3, 1:3], caption = 'hla_drb3 Carrier count & frequency_carrier.')
+hla_drb4_count_frequency_carrier <- cbind(hla_drb4_count_carrier,hla_drb4_frequency_carrier)
+knitr::kable(hla_drb4_count_frequency_carrier[1:1, 1:3], caption = 'hla_drb4 Carrier count & frequency_carrier.')
+dpa1_count_carrier_per_status <- dpa1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("dpa1 Carrier count" = sum))
+dpb1_count_carrier_per_status <- dpb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("dpb1 Carrier count" = sum))
+dqa1_count_carrier_per_status <- dqa1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("dqa1 Carrier count" = sum))
+dqb1_count_carrier_per_status <- dqb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("dqb1 Carrier count" = sum))
+drb5_count_carrier_per_status <- drb5_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("drb5 Carrier count" = sum))
+hla_a_count_carrier_per_status <- hla_a_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_a Carrier count" = sum))
+hla_b_count_carrier_per_status <- hla_b_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_b Carrier count" = sum))
+hla_c_count_carrier_per_status <- hla_c_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_c Carrier count" = sum))
+hla_drb1_count_carrier_per_status <- hla_drb1_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_drb1 Carrier count" = sum))
+hla_drb3_count_carrier_per_status <- hla_drb3_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_drb3 Carrier count" = sum))
+hla_drb4_count_carrier_per_status <- hla_drb4_dat %>% group_by(Allele, HCV_status) %>% summarise_at(vars(Carrier),list("hla_drb4 Carrier count" = sum))
+dpa1_frequency_carrier_per_status <- dpa1_count_carrier_per_status %>% summarise("dpa1 frequency_carrier" = `dpa1 Carrier count`/dpa1_total_pop_carrier$`Total dpa1 carrier population`)
+dpb1_frequency_carrier_per_status <- dpb1_count_carrier_per_status %>% summarise("dpb1 frequency_carrier" = `dpb1 Carrier count`/dpb1_total_pop_carrier$`Total dpb1 carrier population`)
+dqa1_frequency_carrier_per_status <- dqa1_count_carrier_per_status %>% summarise("dqa1 frequency_carrier" = `dqa1 Carrier count`/dqa1_total_pop_carrier$`Total dqa1 carrier population`)
+dqb1_frequency_carrier_per_status <- dqb1_count_carrier_per_status %>% summarise("dqb1 frequency_carrier" = `dqb1 Carrier count`/dqb1_total_pop_carrier$`Total dqb1 carrier population`)
+drb5_frequency_carrier_per_status <- drb5_count_carrier_per_status %>% summarise("drb5 frequency_carrier" = `drb5 Carrier count`/drb5_total_pop_carrier$`Total drb5 carrier population`)
+hla_a_frequency_carrier_per_status <- hla_a_count_carrier_per_status %>% summarise("hla_a frequency_carrier" = `hla_a Carrier count`/hla_a_total_pop_carrier$`Total hla_a carrier population`)
+hla_b_frequency_carrier_per_status <- hla_b_count_carrier_per_status %>% summarise("hla_b frequency_carrier" = `hla_b Carrier count`/hla_b_total_pop_carrier$`Total hla_b carrier population`)
+hla_c_frequency_carrier_per_status <- hla_c_count_carrier_per_status %>% summarise("hla_c frequency_carrier" = `hla_c Carrier count`/hla_c_total_pop_carrier$`Total hla_c carrier population`)
+hla_drb1_frequency_carrier_per_status <- hla_drb1_count_carrier_per_status %>% summarise("hla_drb1 frequency_carrier" = `hla_drb1 Carrier count`/hla_drb1_total_pop_carrier$`Total hla_drb1 carrier population`)
+hla_drb3_frequency_carrier_per_status <- hla_drb3_count_carrier_per_status %>% summarise("hla_drb3 frequency_carrier" = `hla_drb3 Carrier count`/hla_drb3_total_pop_carrier$`Total hla_drb3 carrier population`)
+hla_drb4_frequency_carrier_per_status <- hla_drb4_count_carrier_per_status %>% summarise("hla_drb4 frequency_carrier" = `hla_drb4 Carrier count`/hla_drb4_total_pop_carrier$`Total hla_drb4 carrier population`)
+dpa1_count_frequency_carrier_per_status <- cbind(dpa1_count_carrier_per_status, dpa1_frequency_carrier_per_status)
+dpb1_count_frequency_carrier_per_status <- cbind(dpb1_count_carrier_per_status, dpb1_frequency_carrier_per_status)
+dqa1_count_frequency_carrier_per_status <- cbind(dqa1_count_carrier_per_status, dqa1_frequency_carrier_per_status)
+dqb1_count_frequency_carrier_per_status <- cbind(dqb1_count_carrier_per_status, dqb1_frequency_carrier_per_status)
+drb5_count_frequency_carrier_per_status <- cbind(drb5_count_carrier_per_status, drb5_frequency_carrier_per_status)
+hla_a_count_frequency_carrier_per_status <- cbind(hla_a_count_carrier_per_status, hla_a_frequency_carrier_per_status)
+hla_b_count_frequency_carrier_per_status <- cbind(hla_b_count_carrier_per_status, hla_b_frequency_carrier_per_status)
+hla_c_count_frequency_carrier_per_status <- cbind(hla_c_count_carrier_per_status, hla_c_frequency_carrier_per_status)
+hla_drb1_count_frequency_carrier_per_status <- cbind(hla_drb1_count_carrier_per_status, hla_drb1_frequency_carrier_per_status)
+hla_drb3_count_frequency_carrier_per_status <- cbind(hla_drb3_count_carrier_per_status, hla_drb3_frequency_carrier_per_status)
+hla_drb4_count_frequency_carrier_per_status <- cbind(hla_drb4_count_carrier_per_status, hla_drb4_frequency_carrier_per_status)
+dpa1_count_frequency_carrier_per_status$`HCV_status`<-as.factor(dpa1_count_frequency_carrier_per_status$`HCV_status`)
+
+# Plotting carrier frequencies
+
+q1 <- ggplot(dpa1_count_frequency_carrier_per_status, aes(`Allele...1`, `dpa1 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q1)
+dpb1_count_frequency_carrier_per_status$`HCV_status`<-as.factor(dpb1_count_frequency_carrier_per_status$`HCV_status`)
+q2 <- ggplot(dpb1_count_frequency_carrier_per_status, aes(`Allele...1`, `dpb1 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q2)
+dqa1_count_frequency_carrier_per_status$`HCV_status`<-as.factor(dqa1_count_frequency_carrier_per_status$`HCV_status`)
+q3 <- ggplot(dqa1_count_frequency_carrier_per_status, aes(`Allele...1`, `dqa1 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q3)
+dqb1_count_frequency_carrier_per_status$`HCV_status`<-as.factor(dqb1_count_frequency_carrier_per_status$`HCV_status`)
+q4 <- ggplot(dqb1_count_frequency_carrier_per_status, aes(`Allele...1`, `dqb1 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q4)
+drb5_count_frequency_carrier_per_status$`HCV_status`<-as.factor(drb5_count_frequency_carrier_per_status$`HCV_status`)
+q5 <- ggplot(drb5_count_frequency_carrier_per_status, aes(`Allele...1`, `drb5 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q5)
+hla_a_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_a_count_frequency_carrier_per_status$`HCV_status`)
+q6 <- ggplot(hla_a_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_a frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q6)
+hla_b_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_b_count_frequency_carrier_per_status$`HCV_status`)
+q7 <- ggplot(hla_b_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_b frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q7)
+hla_c_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_c_count_frequency_carrier_per_status$`HCV_status`)
+q8 <- ggplot(hla_c_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_c frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q8)
+hla_drb1_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_drb1_count_frequency_carrier_per_status$`HCV_status`)
+q9 <- ggplot(hla_drb1_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_drb1 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q9)
+hla_drb3_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_drb3_count_frequency_carrier_per_status$`HCV_status`)
+q10 <- ggplot(hla_drb3_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_drb3 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q10)
+hla_drb4_count_frequency_carrier_per_status$`HCV_status`<-as.factor(hla_drb4_count_frequency_carrier_per_status$`HCV_status`)
+q11 <- ggplot(hla_drb4_count_frequency_carrier_per_status, aes(`Allele...1`, `hla_drb4 frequency_carrier`, fill = `HCV_status`)) + geom_bar(stat = "identity", position=position_dodge()) + theme_classic() + scale_fill_manual(values = wes_palette("Moonrise3", n =2, type = "discrete"), name ="Hepatitis C status", labels = c("Progressors", "Spontaneous Recovery")) + labs(x="Alleles", y = "Carrier frequency")
+print(q11)
+```
+
+### Fisher's exact tests
+```{r, message=FALSE, warning=FALSE}
+dpa1_dat2 <- dpa1_dat[-c(2,3,5)]
+dpb1_dat2 <- dpb1_dat[-c(2,3,5)]
+dqa1_dat2 <- dqa1_dat[-c(2,3,5)]
+dqb1_dat2 <- dqb1_dat[-c(2,3,5)]
+drb5_dat2 <- drb5_dat[-c(2,3,5)]
+hla_a_dat2 <- hla_a_dat[-c(2,3,5)]
+hla_b_dat2 <- hla_b_dat[-c(2,3,5)]
+hla_c_dat2 <- hla_c_dat[-c(2,3,5)]
+hla_drb1_dat2 <- hla_drb1_dat[-c(2,3,5)]
+hla_drb3_dat2 <- hla_drb3_dat[-c(2,3,5)]
+hla_drb4_dat2 <- hla_drb4_dat[-c(2,3,5)]
+dpa1_wide <- dpa1_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+dpb1_wide <- dpb1_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+dqa1_wide <- dqa1_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+dqb1_wide <- dqb1_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+drb5_wide <- drb5_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_a_wide <- hla_a_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_b_wide <- hla_b_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_c_wide <- hla_c_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_drb1_wide <- hla_drb1_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_drb3_wide <- hla_drb3_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+hla_drb4_wide <- hla_drb4_dat2 %>%  pivot_wider(names_from = "Allele", values_from = "Carrier")
+dpa1_factors <- data.frame(lapply(dpa1_wide, as.factor))
+str(dpa1_factors)
+dpb1_factors <- data.frame(lapply(dpb1_wide, as.factor))
+str(dpb1_factors)
+dqa1_factors <- data.frame(lapply(dqa1_wide, as.factor))
+str(dqa1_factors)
+dqb1_factors <- data.frame(lapply(dqb1_wide, as.factor))
+str(dqb1_factors)
+drb5_factors <- data.frame(lapply(drb5_wide, as.factor))
+str(drb5_factors)
+hla_a_factors <- data.frame(lapply(hla_a_wide, as.factor))
+str(hla_a_factors)
+hla_b_factors <- data.frame(lapply(hla_b_wide, as.factor))
+str(hla_b_factors)
+hla_c_factors <- data.frame(lapply(hla_c_wide, as.factor))
+str(hla_c_factors)
+hla_drb1_factors <- data.frame(lapply(hla_drb1_wide, as.factor))
+str(hla_drb1_factors)
+hla_drb3_factors <- data.frame(lapply(hla_drb3_wide, as.factor))
+str(hla_drb3_factors)
+hla_drb4_factors <- data.frame(lapply(hla_drb4_wide, as.factor))
+str(hla_drb4_factors)
+fisher0_dpa1 <- lapply(dpa1_factors[,-c(1,2)],fisher.test,y = dpa1_factors$HCV_status)
+fisher0_dpb1 <- lapply(dpb1_factors[,-c(1,2)],fisher.test,y = dpb1_factors$HCV_status)
+fisher0_dqa1 <- lapply(dqa1_factors[,-c(1,2)],fisher.test,y = dqa1_factors$HCV_status)
+fisher0_dqb1 <- lapply(dqb1_factors[,-c(1,2)],fisher.test,y = dqb1_factors$HCV_status)
+fisher0_drb5 <- lapply(drb5_factors[,-c(1,2)],fisher.test,y = drb5_factors$HCV_status)
+fisher0_hla_a <- lapply(hla_a_factors[,-c(1,2)],fisher.test,y = hla_a_factors$HCV_status)
+fisher0_hla_b <- lapply(hla_b_factors[,-c(1,2)],fisher.test,y = hla_b_factors$HCV_status)
+fisher0_hla_c <- lapply(hla_c_factors[,-c(1,2)],fisher.test,y = hla_c_factors$HCV_status)
+fisher0_hla_drb1 <- lapply(hla_drb1_factors[,-c(1,2)],fisher.test,y = hla_drb1_factors$HCV_status)
+fisher0_hla_drb3 <- lapply(hla_drb3_factors[,-c(1,2)],fisher.test,y = hla_drb3_factors$HCV_status)
+# error in calculating hla_drb4 fisher test as there is only 1 allele 
+fisher1_dpa1 <- data.frame(Reduce(rbind, fisher0_dpa1))
+fisher2_dpa1 <-fisher1_dpa1[c(1,2,3)]
+fisher1_dpb1 <- data.frame(Reduce(rbind, fisher0_dpb1))
+fisher2_dpb1 <-fisher1_dpb1[c(1,2,3)]
+fisher1_dqa1 <- data.frame(Reduce(rbind, fisher0_dqa1))
+fisher2_dqa1 <-fisher1_dqa1[c(1,2,3)]
+fisher1_dqb1 <- data.frame(Reduce(rbind, fisher0_dqb1))
+fisher2_dqb1 <-fisher1_dqb1[c(1,2,3)]
+fisher1_drb5 <- data.frame(Reduce(rbind, fisher0_drb5))
+fisher2_drb5 <-fisher1_drb5[c(1,2,3)]
+fisher1_hla_a <- data.frame(Reduce(rbind, fisher0_hla_a))
+fisher2_hla_a <-fisher1_hla_a[c(1,2,3)]
+fisher1_hla_b <- data.frame(Reduce(rbind, fisher0_hla_b))
+fisher2_hla_b <-fisher1_hla_b[c(1,2,3)]
+fisher1_hla_c <- data.frame(Reduce(rbind, fisher0_hla_c))
+fisher2_hla_c <-fisher1_hla_c[c(1,2,3)]
+fisher1_hla_drb1 <- data.frame(Reduce(rbind, fisher0_hla_drb1))
+fisher2_hla_drb1 <-fisher1_hla_drb1[c(1,2,3)]
+fisher1_hla_drb3 <- data.frame(Reduce(rbind, fisher0_hla_drb3))
+fisher2_hla_drb3 <-fisher1_hla_drb3[c(1,2,3)]
+fisher0 <- rbind(fisher2_dpa1,fisher2_dpb1,fisher2_dqa1,fisher2_dqb1,fisher2_drb5,fisher2_hla_a,fisher2_hla_b,fisher2_hla_c,fisher2_hla_drb1,fisher2_hla_drb3)
+Alleles <- c("1","2","1","10","11","13","14","17","19","2","20","23","3","4","5","6","1","2","3","4","5","2","3","4","5","6","1","2","A01","A02","A03","A11","A23","A24","A25","A26","A29","A30","A31","A32","A33","A34","A66","A68","A74","B07","B08","B13","B14","B15","B18","B27","B35","B37","B38","B39","B40","B41","B44","B46","B47","B49","B50","B51","B52","B53","B55","B56","B57","B58","C01","C02","C03","C04","C05","C06","C07","C08","C09","C10","C11","C12","C13","C14","C15","C16","C17","1","10","11","12","13","14","15","16","2","3","4","5","6","7","8","9","1","2","3")
+Locus <- c("dpa1","dpa1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dpb1","dqa1","dqa1","dqa1","dqa1","dqa1","dqb1","dqb1","dqb1","dqb1","dqb1","drb5","drb5","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_a","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_b","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_c","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb1","hla_drb3","hla_drb3","hla_drb3")
+fisher0$Alleles <- Alleles
+fisher0$Locus <- Locus
+fisher1 <- data.frame(lapply(fisher0, function(x) {gsub(")", "", x)}))
+fisher2 <- data.frame(lapply(fisher1, function(x) {gsub("odds ratio", "", x)}))
+fisher3 <- data.frame(lapply(fisher2, function(x) {gsub("=", "", x)}))
+fisher4 <- data.frame(lapply(fisher3, function(x) {gsub("'", "", x)}))
+fisher5 <- data.frame(lapply(fisher3, function(x) {gsub("c(", "", x, fixed = TRUE)}))
+fisher6 <- separate(data = fisher5,col = estimate, into = c("x", "odds ratio"), sep = " ", remove = TRUE,convert = TRUE,extra = "merge", fill = "left") 
+fisher6$x <- NULL
+fisher <- separate(data = fisher6,col = `conf.int`, into = c("CI_25%", "CI_75%"), sep = ", ", remove = TRUE,convert = TRUE,extra = "merge", fill = "left") 
+fisher <- fisher[c("Locus", "Alleles", "odds ratio", "CI_25%", "CI_75%",  "p.value")] 
+knitr::kable(fisher[1:106, 1:4], caption = 'Odds ratios & p values')
+```
+
+### Power of Fisher exact tests 
+*Values calculated using g power
+```{r, message=FALSE, warning=FALSE}
+summarydat <- read_csv("Gpower input and output.csv")
+knitr::kable(summarydat[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'Actual power of each allele')
+```
+
+### Determining which alleles to investigate further
+```{r, message=FALSE, warning=FALSE}
+summarydat <- transform(summarydat, "Progressor_proportion" = `HCV_0_Carriers`/104, "Recovered_proportion" = `HCV_1_Carriers`/31)
+summarydat <- transform(summarydat, "total carriers" = (`HCV_0_Carriers` + `HCV_1_Carriers`)/134)
+mean(summarydat[["Progressor_proportion"]])
+mean(summarydat[["Recovered_proportion"]])
+potential<- summarydat %>% filter(`total.carriers` >= 0.15)
+knitr::kable(potential[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'Alleles with proportions greater than 15%')
+apriori<- summarydat %>% filter(`Locus` == "hla_drb1" & `Allele` == "1"  | `Locus` == "hla_drb1" & `Allele` == "11"  | `Locus` == "hla_b" & `Allele` == "B27" | `Locus` == "hla_b" & `Allele` == "B57")
+knitr::kable(apriori[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'apriori alleles')
+```
+
+### Linkage disequilibrium 
+* (amongst the alleles with an overall carrier proportion greater than 15%)
+```{r, message=FALSE, warning=FALSE, dpi=200}
+dpa1 <- dpa1_wide %>% rename(dpa1_1 = `1`, dpa1_2 = `2`)
+dpb1 <- dpb1_wide %>% rename(dpb1_1 = `1`,dpb1_10 = `10`,dpb1_11 = `11`,dpb1_13 = `13`,dpb1_14 = `14`,dpb1_17 = `17`,dpb1_19 = `19`,dpb1_2 = `2`,dpb1_20 = `20`,dpb1_23 = `23`,dpb1_3 = `3`,dpb1_4 = `4`,dpb1_5 = `5`,dpb1_6 = `6`,)
+dqa1 <- dqa1_wide %>% rename(dqa1_1 = `1`, dqa1_2 = `2`,dqa1_3 = `3`, dqa1_4 = `4`,dqa1_5 = `5`)
+dqb1 <- dqb1_wide %>% rename(dqb1_2 = `2`,dqb1_3 = `3`, dqb1_4 = `4`,dqb1_5 = `5`, dqb1_6 = `6`)
+drb5 <- drb5_wide %>% rename(drb5_1 = `1`, drb5_2 = `2`)
+hla_drb1 <- hla_drb1_wide %>% rename(hla_drb1_1 = `1`,hla_drb1_10 = `10`,hla_drb1_11 = `11`,hla_drb1_12 = `12`,hla_drb1_13 = `13`,hla_drb1_14 = `14`,hla_drb1_15 = `15`,hla_drb1_16 = `16`,hla_drb1_2 = `2`,hla_drb1_3 = `3`,hla_drb1_4 = `4`,hla_drb1_5 = `5`,hla_drb1_6 = `6`,hla_drb1_7 = `7`,hla_drb1_8 = `8`,hla_drb1_9 = `9`,)
+hla_drb3 <- hla_drb3_wide %>% rename(hla_drb3_1 = `1`,hla_drb3_2 = `2`,hla_drb3_3 = `3`)
+x0 <- merge.data.frame(dpa1,dpb1,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x1 <- merge.data.frame(dqa1,dqb1,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x2 <- merge.data.frame(drb5,hla_a_wide,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x3 <- merge.data.frame(hla_b_wide,hla_c_wide,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x4 <- merge.data.frame(hla_drb1,hla_drb3,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x5 <- merge.data.frame(x0,x1,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x6 <- merge.data.frame(x2,x3,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x7 <- merge.data.frame(x5,x6,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x8 <- merge.data.frame(x7,x4,all = TRUE, by = c("Participant_ID", "HCV_status"))
+x9 <- x8[-c(1,2)]
+x <- cor(x9,method = "pearson", use = "pairwise.complete.obs")
+x <- as.data.frame(x)
+y <- x[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","B57","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2","B27","hla_drb1_1","hla_drb1_11")]
+y <- y[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","B57","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","hla_drb1_1","hla_drb1_11"),]
+knitr::kable(y, caption = 'Correlations amongst alleles with an overall carrier frequency greater than 15% and apriori alleles')
+y <- as.matrix(y)
+row.names(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "B57","C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
+colnames(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "B57","C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
+y <- y[,c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44", "B57", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11")]
+y <- y[c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44","B57", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11"),]
+library(corrplot)
+corrplot(y, method = "number", order = "alphabet", na.label = "-", tl.col="black")
+corrplot(y, method = "color", order = "alphabet", na.label = "-", tl.col="black")
+```
+
+### Univariable analysis
+```{r, message=FALSE, warning=FALSE}
+x10 <- x8[-c(1)]
+varnames <- c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","B57","hla_drb1_1","hla_drb1_11")
+GLM <- t(sapply(varnames,
+       function(var) {
+# var <- "B27" 
+           formula <- as.formula(paste("HCV_status ~", var))
+           LR <- glm(formula, data = x10, family = binomial, na.action = na.exclude)
+           sumLR <- summary(LR)
+           p.value <- coef(sumLR)[var, "Pr(>|z|)"]
+           CI <- exp(confint(LR) [var, ]) 
+           oddsratio <- exp(coef(sumLR)[var, "Estimate"])
+           c(OR = oddsratio, CI = CI, p.value = p.value)
+                  }))
+rownames(GLM) <- varnames
+round(GLM,3)
+GLM <- as.data.frame(GLM)
+GLM <- GLM %>%  mutate_if(is.numeric, round, digits = 2)
+GLM$Allele <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27","B57", "DRB1_1", "DRB1_11")
+GLM <- GLM %>% relocate(Allele, before = OR) %>% arrange(Allele)
+GLM_filtered <- GLM %>% filter(p.value <= 0.25)
+print(GLM_filtered)
+
+# Univariable analysis forest plot
+
+library(forestplot)
+library(ggsn)
+tabletext <- cbind(c("Allele","\n",GLM$Allele), c("P Value","\n",GLM$p.value))
+forestplot(labeltext=tabletext, graph.pos=2, mean=c(NA,NA,GLM$OR), lower=c(NA,NA,GLM$`CI.2.5 %`), upper=c(NA,NA,GLM$`CI.97.5 %`), title="                                       Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="                             <--HCV Progression--   --HCV Clearance-->", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
+```
+
+### Multivariable analysis 
+* (use of likelihood ratio & wald test)
+```{r, message=FALSE, warning=FALSE}
+GLM_formula <- as.formula(paste("HCV_status ~", paste(GLM_filtered$Allele, collapse = " + ")))
+LRf <- glm(GLM_formula, data = x10, family = binomial, na.action = na.exclude)
+sumLRf <- summary(LRf)
+drop1(LRf, test = "Chisq")
+mod2 <- update(LRf, ~.-A02)
+summod2 <- summary(mod2)
+drop1(mod2, test = "Chisq")
+mod3 <- update(mod2, ~.-B08)
+summod3 <- summary(mod3)
+drop1(mod3, test = "Chisq")
+mod4 <- update(mod3, ~.-A11)
+summod4 <- summary(mod4)
+mod <- drop1(mod4, test = "Chisq")
+print(mod)
+print(summod4)
+```
+
+### Predicted probablility of clearance
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
+newdata = expand.grid(B27= c(0,1), B35 = c(0,1))
+predict(mod4, type = "link", newdata = newdata)
+newdata$`Predicted probability` <- predict(mod4, type = "response", newdata = newdata)
+CI <- predict(mod4, newdata = newdata, type = "link", se.fit = TRUE)
+critval <- 1.96
+CI$uprCI <- plogis(CI$fit + (critval * CI$se.fit))
+CI$lwrCI <- plogis(CI$fit - (critval * CI$se.fit))
+newdata <- cbind(newdata,CI)
+newdata <- newdata[-c(4:6)]
+print(newdata)
+```
+
+### Observed probablility of clearance
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
+o00 <- prop.table(table(x8$HCV_status, x8$B27 == 0 & x8$B35 == 0),2)["1", "TRUE"]
+o10 <- prop.table(table(x8$HCV_status, x8$B27 == 1 & x8$B35 == 0),2)["1", "TRUE"]
+o01 <- prop.table(table(x8$HCV_status, x8$B27 == 0 & x8$B35 == 1),2)["1", "TRUE"]
+o11 <- prop.table(table(x8$HCV_status, x8$B27 == 1 & x8$B35 == 1),2)["1", "TRUE"] # 0 probability
+c1_1 <- x8 %>% group_by(HCV_status, B27, B35) %>% filter(HCV_status == 1 & B27 == 0 & B35 == 0) %>% summarise(`Participant count` = sum(HCV_status))
+c1_2 <- x8 %>% group_by(HCV_status, B27, B35) %>% filter(HCV_status == 1 & B27 == 1 & B35 == 0) %>% summarise(`Participant count` = sum(HCV_status))
+c1_3 <- x8 %>% group_by(HCV_status, B27, B35) %>% filter(HCV_status == 1 & B27 == 0 & B35 == 1) %>% summarise(`Participant count` = sum(HCV_status))
+c1_4 <- data.frame(HCV_status = 1, B27 = 1, B35 = 1, `Participant.count` = 0)
+colnames(c1_4)[4] <- "Participant count"
+newdata <- cbind(newdata[,c(1,2,4,5,3)],`Observed probability` = rbind(o00,o10,o01,o11), rbind(c1_1, c1_2, c1_3, c1_4))
+newdata <- newdata[,c(1:6,10)]
+knitr::kable(newdata[1:4, 1:7], caption = 'Observed and predicted probability of HCV clearance from HLA variables.')
+```
+
+## Non-HLA Data
+### Data import
+```{r, message=FALSE, warning=FALSE}
+dat3 <- read.csv("multivariable_df.csv")
+dat3 <- dat3 %>% rename( "Participant_ID" = record_id) 
+dat3 <- merge(dat,dat3, by = "Participant_ID")
+dat3 <- dat3[-c(2,3,5,6,7)] %>% group_by(Participant_ID)
+dat3 <- dat3[!duplicated(dat3), ]
+dat3 <- dat3 %>% rename("Genotype" = Genotype.y) 
+```
+
+### Data organisation
+```{r, message=FALSE, warning=FALSE}
+dat3$Heroin_use <- ifelse(dat3$Heroin_use == "use", "1", "0")
+dat3$CC_NonCC <- ifelse(dat3$CC_NonCC == "CC", "1", ifelse(dat3$CC_NonCC == "CT/TT", "0", NA))
+dat3 <- dat3 %>% rename( "Peak_bilirubin" = "peak_Bil_binary") 
+dat3$Peak_bilirubin <- ifelse(dat3$Peak_bilirubin == "< 20", "0", ifelse(dat3$Peak_bilirubin == ">= 20", "1", NA))
+dat3$Genotype <- ifelse(dat3$Genotype == "gt1a", "1", ifelse(dat3$Genotype == "gt3a", "2", ifelse(dat3$Genotype == "gt4d", "3", NA)))
+dat3$Heroin_use <- as.numeric(dat3$Heroin_use)
+dat3$hiv <- as.numeric(dat3$hiv)
+dat3$MSM <- as.numeric(dat3$MSM)
+dat3$CC_NonCC <- as.numeric(dat3$CC_NonCC)
+dat3$Peak_bilirubin <- as.numeric(dat3$Peak_bilirubin)
+dat3$Genotype <- as.factor(dat3$Genotype)
+str(dat3)
+```
+
+### Data counts
+```{r, message=FALSE, warning=FALSE}
+HIV <- dat3 %>% group_by(HCV_status, hiv) %>% summarise(`HIV count` = n_distinct(Participant_ID))
+print(HIV)
+Heroin <- dat3 %>% group_by(HCV_status, Heroin_use) %>% summarise(`Heroin count` = n_distinct(Participant_ID))
+print(Heroin)
+MSM <- dat3 %>% group_by(HCV_status, MSM) %>% summarise(`MSM count` = n_distinct(Participant_ID))
+print(MSM)
+CC_NCC <- dat3 %>% group_by(HCV_status, CC_NonCC) %>% summarise(`CC_NCC count` = n_distinct(Participant_ID))
+print(CC_NCC)
+Bilirubin <- dat3 %>% group_by(HCV_status,Peak_bilirubin) %>% summarise(`Bilirubin count` = n_distinct(Participant_ID))
+print(Bilirubin)
+Genotype <- dat3 %>% group_by(HCV_status, Genotype) %>% summarise(`Genotype count` = n_distinct(Participant_ID))
+print(Genotype)
+```
+
+### Fisher's exact tests
+```{r, message=FALSE, warning=FALSE}
+fisher_other <- lapply(dat3[-c(1)],fisher.test,y = dat3$HCV_status)
+fisher_other2 <- data.frame(Reduce(rbind, fisher_other))
+fisher_other2 <-fisher_other2[c(1,2,3)]
+cnames <- colnames(dat3[-c(1)])
+fisher_other2$Variables <- cnames
+fisher_other2 <- data.frame(lapply(fisher_other2, function(x) {gsub(")", "", x)}))
+fisher_other2 <- data.frame(lapply(fisher_other2, function(x) {gsub("odds ratio", "", x)}))
+fisher_other2 <- data.frame(lapply(fisher_other2, function(x) {gsub("=", "", x)}))
+fisher_other2 <- data.frame(lapply(fisher_other2, function(x) {gsub("'", "", x)}))
+fisher_other2 <- data.frame(lapply(fisher_other2, function(x) {gsub("c(", "", x, fixed = TRUE)}))
+fisher_other2 <- separate(data = fisher_other2,col = estimate, into = c("x", "odds ratio"), sep = " ", remove = TRUE,convert = TRUE,extra = "merge", fill = "left") 
+fisher_other2$x <- NULL
+fisher_other2 <- fisher_other2[-c(1), ]
+fisher_other2 <- separate(data = fisher_other2,col = `conf.int`, into = c("CI_25%", "CI_75%"), sep = ", ", remove = TRUE,convert = TRUE,extra = "merge", fill = "left") 
+fisher_other2 <- fisher_other2[c("Variables", "odds ratio", "CI_25%", "CI_75%",  "p.value")] 
+knitr::kable(fisher_other2[1:6, 1:5], caption = 'Odds ratios & p values')
+```
+
+### Univariable analysis
+```{r, message=FALSE, warning=FALSE}
+varnames2 <- c("hiv","Heroin_use", "Peak_bilirubin", "Genotype", "MSM", "CC_NonCC")
+GLM2 <- sapply(varnames2,
+       function(var2) {
+# var2 <- "hiv"
+           formula <- as.formula(paste("HCV_status ~", var2))
+           LR2 <- glm(formula, data = dat3[-c(1)], family = binomial, na.action = na.exclude)
+           
+           sumLR2 <- summary(LR2)
+           p.value <- coef(sumLR2)[-1, "Pr(>|z|)"]
+           CI <- exp(confint(LR2) [-1, ])
+          if(length(table(dat3[, var2]))>2)  CI <- as.data.frame(CI)
+           oddsratio <- exp(coef(sumLR2)[-1, "Estimate"])
+           cbind(OR = oddsratio, lwCI = CI[["2.5 %"]], upCI = CI[["97.5 %"]], p.value = p.value)
+                      })
+GLM2 <- do.call(rbind, GLM2)  
+rownames(GLM2) <- c("HIV","Heroin use", "Peak bilirubin", "Genotype2", "Genotype3", "MSM", "IL28B SNP")
+round(GLM2,3)
+GLM2 <- as.data.frame(GLM2)
+GLM2$Variables <-  c("HIV","Heroin use", "Peak bilirubin", "Genotype gt3a", "Genotype gt4d", "MSM", "IL28B SNP")
+GLM2 <- GLM2 %>% relocate(Variables, before = OR)
+GLM2 <- GLM2 %>%  mutate_if(is.numeric, round, digits = 2)
+GLM_filtered2 <- GLM2 %>% filter(p.value <= 0.25)
+print(GLM_filtered2)
+
+# Univariable analysis forest plot
+
+tabletext2 <- cbind(c("Variables","\n",GLM2$Variable), c("P Value","\n",GLM2$p.value))
+forestplot(labeltext=tabletext2, graph.pos=2, mean=c(NA,NA,GLM2$OR), lower=c(NA,NA,GLM2$lwCI), upper=c(NA,NA,GLM2$upCI), title="            Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="<--HCV Progression--   --HCV Clearance-->  ", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
+```
+
+### Multivariable analysis
+```{r, message=FALSE, warning=FALSE}
+LRf2 <- glm(HCV_status~hiv + Heroin_use + MSM + Genotype + Peak_bilirubin, family = binomial, data = dat3[-c(1)])
+summary(LRf2)
+drop1(LRf2, test = "Chisq")
+LRf2 <- update(LRf2, ~.-Genotype)
+summary(LRf2)
+drop1(LRf2, test = "Chisq")
+LRf2 <- update(LRf2, ~.-Heroin_use)
+summary(LRf2)
+drop1(LRf2, test = "Chisq")
+LRf2 <- update(LRf2, ~.-hiv)
+summary(LRf2)
+drop1(LRf2, test = "Chisq")
+```
+
+### Collinearity check
+```{r, message=FALSE, warning=FALSE}
+library(car)
+vif <- vif(glm(HCV_status~hiv + Heroin_use + MSM + Genotype + Peak_bilirubin, family = binomial, data = dat3[-c(1)]))
+print(vif)
+```
+
+### Predicted probablility of clearance
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
+newdata2 = expand.grid(MSM = c(0,1), Peak_bilirubin = c(0,1))
+predict(LRf2, type = "response", newdata = newdata2)
+newdata2$`Predicted probability` <- predict(LRf2, type = "response", newdata = newdata2)
+CI2 <- predict(LRf2, newdata = newdata2, type = "link", se.fit = TRUE)
+critval <- 1.96
+CI2$uprCI <- plogis(CI2$fit + (critval * CI2$se.fit))
+CI2$lwrCI <- plogis(CI2$fit - (critval * CI2$se.fit))
+newdata2 <- cbind(newdata2,CI2)
+newdata2 <- newdata2[-c(4:6)]
+print(newdata2)
+```
+
+### Observed probablility of clearance
+```{r, message=FALSE, warning=FALSE, eval=FALSE}
+op00 <- prop.table(table(dat3$HCV_status, dat3$MSM == 0 & dat3$Peak_bilirubin == 0),2)["1", "TRUE"]
+op10 <- prop.table(table(dat3$HCV_status, dat3$MSM == 1 & dat3$Peak_bilirubin == 0),2)["1", "TRUE"]
+op01 <- prop.table(table(dat3$HCV_status, dat3$MSM == 0 & dat3$Peak_bilirubin == 1),2)["1", "TRUE"]
+op11 <- prop.table(table(dat3$HCV_status, dat3$MSM == 1 & dat3$Peak_bilirubin == 1),2)["1", "TRUE"]
+c2_1 <- dat3 %>% group_by(MSM, Peak_bilirubin) %>% filter(MSM == 0 & Peak_bilirubin == 0) %>% summarise(`Participant count` = n())
+c2_2 <- dat3 %>% group_by(MSM, Peak_bilirubin) %>% filter(MSM == 1 & Peak_bilirubin == 0) %>% summarise(`Participant count` = n())
+c2_3 <- dat3 %>% group_by(MSM, Peak_bilirubin) %>% filter(MSM == 0 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+c2_4 <- dat3 %>% group_by(MSM, Peak_bilirubin) %>% filter(MSM == 1 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+newdata2 <- cbind(newdata2[,c(1,2,4,5,3)],`Observed probability` = rbind(op00,op10,op01,op11), rbind(c2_1, c2_2, c2_3, c2_4))
+newdata2 <- newdata2[,c(1:6,9)]
+knitr::kable(newdata2[1:4, 1:7], caption = 'Observed and predicted probability of HCV clearance from non-HLA variables.')
+```
+
+## Predictive model
+### Data organisation
+```{r, message=FALSE, warning=FALSE}
+# Final glm variables: B27, B35, hiv, MSM, bilirubin
+dat_final <- merge(x8,dat3, by = "Participant_ID")
+dat_final <- dat_final[-c(3:53, 56:109,111, 113, 115)]
+dat_final <- rename(dat_final, c("HCV_status"= "HCV_status.x"))
+```
+
+### Exclusion of missing data
+```{r, message=FALSE, warning=FALSE}
+dat_final_NA <- dat_final %>% filter_at(vars(-Participant_ID, -HCV_status), any_vars(is.na(.)))
+print(dat_final_NA)
+dat_final <- na.omit(dat_final)
+```
+
+### Data counts
+```{r, message=FALSE, warning=FALSE}
+summary(dat_final)
+str(dat_final)
+```
+
+### Univariable analysis
+```{r, message=FALSE, warning=FALSE}
+varnames3 <- c("B27","B35", "MSM", "Peak_bilirubin")
+GLM3 <- t(sapply(varnames3,
+       function(var3) {
+# var3 <- "B27" 
+           formula3 <- as.formula(paste("HCV_status ~", var3))
+           LR3 <- glm(formula3, data = dat_final[-c(1)], family = binomial, na.action = na.exclude)
+           sumLR3 <- summary(LR3)
+           p.value <- coef(sumLR3)[var3, "Pr(>|z|)"]
+           CI <- exp(confint(LR3) [var3, ]) 
+           oddsratio <- exp(coef(sumLR3)[var3, "Estimate"])
+           c(OR = oddsratio, CI = CI, p.value = p.value)
+                  }))
+round(GLM3,3)
+GLM3 <- as.data.frame(GLM3)
+GLM3$Variables <- varnames3
+GLM3 <- GLM3 %>% relocate(Variables, before = OR)
+GLM3 <- GLM3 %>%  mutate_if(is.numeric, round, digits = 3)
+GLM_filtered3 <- GLM3 %>% filter(p.value <= 0.25)
+print(GLM_filtered3)
+
+# Univariable analysis forest plot
+
+tabletext3 <- cbind(c("Variables","\n",GLM3$Variables), c("P Value","\n",GLM3$p.value))
+forestplot(labeltext=tabletext3, graph.pos=2, mean=c(NA,NA,GLM3$OR), lower=c(NA,NA,GLM3$`CI.2.5 %`), upper=c(NA,NA,GLM3$`CI.97.5 %`), title="            Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="         <--HCV Progression--   --HCV Clearance-->", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
+```
+
+### Multivariable analysis
+```{r, message=FALSE, warning=FALSE}
+GLM_final <- glm(HCV_status ~ B27 + B35 + MSM + Peak_bilirubin, family = binomial, data = dat_final)
+summary(GLM_final)
+drop1(GLM_final, test = "Chisq")
+GLM_final <- update(GLM_final, ~.-B35)
+summary(GLM_final)
+drop1(GLM_final, test = "Chisq")
+
+vif(GLM_final) # Collinearity check
+```
+
+### HIV interaction
+```{r, message=FALSE, warning=FALSE}
+table(dat_final$HCV_status,dat_final$Peak_bilirubin,dat_final$hiv)
+GLM_inter <- glm(HCV_status ~ Peak_bilirubin*hiv, family = binomial, data = dat_final)
+summary(GLM_inter)
+drop1(GLM_inter, test = "Chisq")
+```
+
+### Predicted probablility of clearance
+```{r, message=FALSE, warning=FALSE}
+newdata3 = expand.grid(B27 = c(0,1), MSM = c(0,1), Peak_bilirubin = c(0,1))
+predict(GLM_final, type = "response", newdata = newdata3)
+newdata3$`Predicted probability` <- predict(GLM_final, type = "response", newdata = newdata3)
+CI3 <- predict(GLM_final, newdata = newdata3, type = "link", se.fit = TRUE)
+critval <- 1.96
+CI3$uprCI <- plogis(CI3$fit + (critval * CI3$se.fit))
+CI3$lwrCI <- plogis(CI3$fit - (critval * CI3$se.fit))
+newdata3 <- cbind(newdata3,CI3)
+newdata3 <- newdata3[-c(5:7)]
+print(newdata3)
+```
+
+### Observed probablility of clearance
+```{r, message=FALSE, warning=FALSE}
+op000 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 0 & dat_final$MSM == 0 & dat_final$Peak_bilirubin == 0),2)["1", "TRUE"]
+# prop.table(table(dat_final$HCV_status, dat_final$B27 == 1 & dat_final$MSM == 0 & dat_final$Peak_bilirubin == 0),2)["1", "TRUE"] # 0 probability
+op100 <- data.frame(B27 = 1, MSM = 0, `Peak_bilirubin` = 0, `Observed probability` = 0)
+op010 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 0 & dat_final$MSM == 1 & dat_final$Peak_bilirubin == 0),2)["1", "TRUE"]
+op110 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 1 & dat_final$MSM == 1 & dat_final$Peak_bilirubin == 0),2)["1", "TRUE"]
+op001 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 0 & dat_final$MSM == 0 & dat_final$Peak_bilirubin == 1),2)["1", "TRUE"]
+op101 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 1 & dat_final$MSM == 0 & dat_final$Peak_bilirubin == 1),2)["1", "TRUE"]
+op011 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 0 & dat_final$MSM == 1 & dat_final$Peak_bilirubin == 1),2)["1", "TRUE"]
+op111 <- prop.table(table(dat_final$HCV_status, dat_final$B27 == 1 & dat_final$MSM == 1 & dat_final$Peak_bilirubin == 1),2)["1", "TRUE"]
+c3_1 <- dat_final %>% group_by(HCV_status,B27,MSM, Peak_bilirubin) %>% filter(HCV_status == 1 & B27 == 0 & MSM == 0 & Peak_bilirubin == 0) %>% summarise(`Participant count` = sum(HCV_status))
+c3_2 <- data.frame(HCV_status = 1, B27 = 1, MSM = 0, `Peak_bilirubin` = 0, `Participant.count` = 0)
+colnames(c3_2)[5] <- "Participant count"
+c3_3 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 0 & MSM == 1 & Peak_bilirubin == 0) %>% summarise(`Participant count` = n())
+c3_4 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 1 & MSM == 1 & Peak_bilirubin == 0) %>% summarise(`Participant count` = n())
+c3_5 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 0 & MSM == 0 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+c3_6 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 1 & MSM == 0 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+c3_7 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 0 & MSM == 1 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+c3_8 <- dat_final %>% group_by(B27,MSM, Peak_bilirubin) %>% filter( B27 == 1 & MSM == 1 & Peak_bilirubin == 1) %>% summarise(`Participant count` = n())
+newdata3 <- cbind(newdata3, rbind(op000, op100, op010, op110, op001, op101, op011, op111), rbind(c3_1, c3_2, c3_3, c3_4, c3_5, c3_6, c3_7, c3_8))
+newdata3 <- newdata3[-c(7,8,9,10,12,13,14,15)]
+
+#'Observed and predicted probability of HCV clearance from final GLM variables.'
+print(newdata3)
+```
+
+### ROC plot
+```{r, message=FALSE, warning=FALSE}
+library(ROCR)
+library(plotROC)
+library(scales)
+fp <- dat_final %>% mutate(`Clearance Propability` = ifelse(B27 == "0" &	MSM == "0" & Peak_bilirubin == "0", 0.2835133,
+                                                     ifelse(B27 == "1" &	MSM == "0" & Peak_bilirubin == "0", 0.7653681,
+                                                     ifelse(B27 == "0" &	MSM == "1" & Peak_bilirubin == "0", 0.0878949,
+                                                     ifelse(B27 == "1" &	MSM == "1" & Peak_bilirubin == "0", 0.4427092,
+                                                     ifelse(B27 == "0" &	MSM == "0" & Peak_bilirubin == "1", 0.5603733,
+                                                     ifelse(B27 == "1" &	MSM == "0" & Peak_bilirubin == "1", 0.9131023,
+                                                     ifelse(B27 == "0" &	MSM == "1" & Peak_bilirubin == "1", 0.2368847,
+                                                     ifelse(B27 == "1" &	MSM == "1" & Peak_bilirubin == "1", 0.7190196, NA))))))))) %>% drop_na()
+fp <- fp[,c(2,8)]
+str(fp)
+ # Plotting data
+boxplot(`Clearance Propability` ~ HCV_status, data = fp)
+stripchart(`Clearance Propability` ~ HCV_status, data = fp, vertical = TRUE, method = "jitter", pch = 16)
+# Making prediction object
+pred <- prediction(fp$`Clearance Propability`, fp$HCV_status)
+## Sensitivity/specificity curve (x-axis: specificity, y-axis: sensitivity)
+perf1 <- performance(pred, "tpr", "fpr")
+# ROC curve, Axes: FPR = 1 - specificity; TPR = sensitivity
+plot(perf1)
+abline(0, 1, lty = 2)
+# Function to get optimal cutoff from curve using performance object from library(ROC)
+opt.cutoff<-
+  function(perf) {
+    a <- unlist(slot(perf,"alpha.values"))
+    x <- unlist(slot(perf,"x.values"))
+    y <- unlist(slot(perf,"y.values"))
+    xy.dist <- y-x
+    intercept=max(xy.dist)
+    m<-xy.dist==intercept
+    list(
+      intercept=intercept,
+      threshold=list(cutoff=a[m],coords=cbind(x,y)[m,]))
+  }
+# Obtaining optimal cut off, i.e. the value of fp$`Clearance Propability` that does the best job of predicting fp$HCV_status
+opt.cutoff(perf1)$threshold$coords
+(cutoff <- opt.cutoff(perf1)$threshold$cutoff)
+# Sensitivity (true positive rate)
+(tpr <- mean(fp$`Clearance Propability`[fp$HCV_status == 1] >= cutoff))
+# 1 - specificity (false positive rate)
+(fpr <- mean(fp$`Clearance Propability`[fp$HCV_status == 0] >= cutoff))
+# Note: These rates should correspond to point on the curve at the maximum perpendicular distance from the diagonal TPR = FPR line 
+points(fpr, tpr, col = "red")
+# Plotting AUC using the ROCR package:
+performance(pred, "auc")@y.values
+# Writing our own AUC function
+AUC.fn <-
+  function(predictor, # predictor must be a continuous number
+           outcome) { # outcome must be binary (0/1) with 1 signifying the outcome we want to predict
+    S0 <- sum(rank(predictor)[outcome == 1])
+    n1 <- sum(outcome == 0)
+    n0 <- sum(outcome == 1)
+    AUC <- (S0 - n0 * (n0 + 1) / 2) / (n0 * n1)
+    p.value <- wilcox.test(predictor ~ outcome)$p.value
+    c(AUC = AUC, p.value = p.value)
+  }
+AUC.fn(fp$`Clearance Propability`, fp$HCV_status)
+# Plotting AUC on the ROC curve
+AUC.val <- AUC.fn(fp$`Clearance Propability`, fp$HCV_status)
+legend("bottomright", legend = paste("AUC =", round(AUC.val["AUC"], 2)))
