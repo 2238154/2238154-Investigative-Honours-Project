@@ -11,21 +11,18 @@ raw_dat <- read_csv("filtered_HLA_patients.csv")
 raw_dat_carriers <- read_csv("filtered_HLA_patients_presence_absence.csv")
 ```
 
-### Renaming columns
+### Data organisation
 ```{r, message=FALSE, warning=FALSE}
 library(plyr)
 rename_raw_dat <- rename(raw_dat, c("X1"="Row", "record_id"="Participant_ID", "sc"="HCV_status"))
 rename_raw_dat_carriers <- rename(raw_dat_carriers, c("X1"="Row", "record_id"="Participant_ID", "sc"="HCV_status"))
-```
 
-### Data pivot
-```{r, message=FALSE, warning=FALSE}
 library(tidyr)
 reshape_raw_dat <- rename_raw_dat %>% pivot_longer(!c(Row, Participant_ID, HCV_status), names_to = "Locus_allele", values_to = "Genotype")
 reshape_raw_dat_carriers <- rename_raw_dat_carriers %>% pivot_longer(!c(Row, Participant_ID, HCV_status), names_to = "Locus_allele", values_to = "Carrier")
 ```
 
-### Categorise Data by locus
+### Categorise Data by HLA locus
 ```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 library(tidyverse)
@@ -71,7 +68,7 @@ new_allele_column_raw_dat_carriers <- new_column_raw_dat_carriers  %>%   mutate(
 new_allele_column_raw_dat_carriers[c(6:16,18:27)] <- list(NULL)
 ```
 
-### Checking which participants have no data for each hla
+### Checking which participants have no data for each HLA
 ```{r, message=FALSE, warning=FALSE}
 missing_dat <- new_allele_column_raw_dat %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Genotype))  %>% filter(sum == "0")
 missing_dat_carrier <- new_allele_column_raw_dat_carriers %>% group_by(Row,Participant_ID,Locus) %>% summarise(sum = sum(Carrier))  %>% filter(sum == "0")
@@ -113,7 +110,7 @@ homozygotes$sum <- NULL
 print(homozygotes)
 ```
 
-### Allele frequencies per locus
+### Allele frequencies per HLA locus
 ```{r, message=FALSE, warning=FALSE, dpi=200}
 dpa1_dat <- dat %>% filter(Locus == "dpa1")
 dpb1_dat <- dat %>% filter(Locus == "dpb1")
@@ -288,7 +285,7 @@ q11 <- ggplot(hla_drb4_count_and_frequency_per_status, aes(`Allele...1`, `hla_dr
 print(q11)
 ```
 
-### Carrier frequencies per locus
+### Carrier frequencies per HLA locus
 ```{r, message=FALSE, warning=FALSE, dpi=200}
 dpa1_count_carrier <- dpa1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dpa1 Carrier count" = sum))
 dpb1_count_carrier <- dpb1_dat %>% group_by(Allele) %>% summarise_at(vars(Carrier),list("dpb1 Carrier count" = sum))
@@ -562,7 +559,8 @@ fisher <- fisher[c("Locus", "Alleles", "odds ratio", "CI_25%", "CI_75%",  "p.val
 knitr::kable(fisher[1:106, 1:4], caption = 'Odds ratios & p values')
 ```
 
-### Power of Fisher exact tests *Values calculated using g power*
+### Power of Fisher exact tests 
+*Values calculated using g power
 ```{r, message=FALSE, warning=FALSE}
 summarydat <- read_csv("Gpower input and output.csv")
 knitr::kable(summarydat[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'Actual power of each allele')
@@ -575,17 +573,10 @@ summarydat <- transform(summarydat, "total carriers" = (`HCV_0_Carriers` + `HCV_
 mean(summarydat[["Progressor_proportion"]])
 mean(summarydat[["Recovered_proportion"]])
 
-# Gpower Actual power output using means: 0.8411089
-
 potential<- summarydat %>% filter(`total.carriers` >= 0.15)
 knitr::kable(potential[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'Alleles with proportions greater than 15%')
 
-# Includes 3 apriori alleles (association reported in literature): A03 (progression), C04 (progression), dqb1_03 (clearance)
-
-# Other apriori alleles that were filtered out by our parameters:
-# drb1_1 (clearance), drb1_11 (clearance), B27 (clearance)
-
-apriori<- summarydat %>% filter(`Locus` == "hla_drb1" & `Allele` == "1"  | `Locus` == "hla_drb1" & `Allele` == "11"  | `Locus` == "hla_b" & `Allele` == "B27")
+apriori<- summarydat %>% filter(`Locus` == "hla_drb1" & `Allele` == "1"  | `Locus` == "hla_drb1" & `Allele` == "11"  | `Locus` == "hla_b" & `Allele` == "B27" | `Locus` == "hla_b" & `Allele` == "B57")
 knitr::kable(apriori[-c(7,8,9,10,11,12,13,14,15,16,17)], caption = 'apriori alleles')
 ```
 
@@ -612,33 +603,29 @@ x9 <- x8[-c(1,2)]
 x <- cor(x9,method = "pearson", use = "pairwise.complete.obs")
 x <- as.data.frame(x)
 
-library(pheatmap)
-library(viridis)
 
-pheatmap(x, cluster_col = F, cluster_row = F, na_col="white",  border_color = NA, fontsize= 9, color.palette= "viridis",clustering_distance_rows = "correlation")
-
-y <- x[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2","B27","hla_drb1_1","hla_drb1_11")]
-y <- y[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","hla_drb1_1","hla_drb1_11"),]
+y <- x[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","B57","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2","B27","hla_drb1_1","hla_drb1_11")]
+y <- y[c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","B57","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","hla_drb1_1","hla_drb1_11"),]
 knitr::kable(y, caption = 'Correlations amongst alleles with an overall carrier frequency greater than 15% and apriori alleles')
 
 y <- as.matrix(y)
 
-row.names(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
-colnames(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
+row.names(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "B57","C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
+colnames(y) <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "B57","C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
 
-y <- y[,c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11")]
-y <- y[c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11"),]
+y <- y[,c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44", "B57", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11")]
+y <- y[c("A01", "A02", "A03", "A11", "A24", "B07", "B08", "B27", "B35", "B44","B57", "C01", "C03", "C04", "C07","DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6",  "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2","DRB1_1", "DRB1_11"),]
 
-pheatmap(y, cluster_col = F, cluster_row = F, na_col="white",  border_color = NA, fontsize= 9, color.palette= "viridis", clustering_distance_rows = "correlation")
+library(corrplot)
+corrplot(y, method = "number", order = "alphabet", na.label = "-", tl.col="black")
 
-# Significant associations (greater than 0.8): drb1_1 - dqb1_5, dqb1_2 - drb1_7
+corrplot(y, method = "color", order = "alphabet", na.label = "-", tl.col="black")
 ```
 
-
-### Univariate analysis
+### Univariable analysis
 ```{r, message=FALSE, warning=FALSE}
 x10 <- x8[-c(1)]
-varnames <- c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","hla_drb1_1","hla_drb1_11")
+varnames <- c("dpa1_1","dpb1_4","dqa1_1","dqb1_2","dqb1_3","dqb1_5","dqb1_6","A01","A02","A03","A11","A24","B07","B08","B35","B44","C01","C03","C04","C07","hla_drb1_3","hla_drb1_4","hla_drb1_5","hla_drb1_7","hla_drb3_2", "B27","B57","hla_drb1_1","hla_drb1_11")
 
 GLM <- t(sapply(varnames,
        function(var) {
@@ -656,15 +643,15 @@ GLM <- t(sapply(varnames,
 rownames(GLM) <- varnames
 round(GLM,3)
 GLM <- as.data.frame(GLM)
-GLM <- GLM %>%  mutate_if(is.numeric, round, digits = 3)
-GLM$Allele <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27", "DRB1_1", "DRB1_11")
+GLM <- GLM %>%  mutate_if(is.numeric, round, digits = 2)
+GLM$Allele <- c("DPA1_1", "DPB1_4", "DQA1_1", "DQB1_2", "DQB1_3", "DQB1_5", "DQB1_6", "A01", "A02", "A03", "A11", "A24", "B07", "B08", "B35", "B44", "C01", "C03", "C04", "C07", "DRB1_3", "DRB1_4", "DRB1_5", "DRB1_7", "DRB3_2", "B27","B57", "DRB1_1", "DRB1_11")
 GLM <- GLM %>% relocate(Allele, before = OR) %>% arrange(Allele)
 
 GLM_filtered <- GLM %>% filter(p.value <= 0.25)
 print(GLM_filtered)
 ```
 
-### Univariate analysis forest plot
+### Univariable analysis forest plot
 ```{r, message=FALSE, warning=FALSE, dpi = 200}
 library(forestplot)
 library(ggsn)
@@ -674,7 +661,7 @@ tabletext <- cbind(c("Allele","\n",GLM$Allele), c("P Value","\n",GLM$p.value))
 forestplot(labeltext=tabletext, graph.pos=2, mean=c(NA,NA,GLM$OR), lower=c(NA,NA,GLM$`CI.2.5 %`), upper=c(NA,NA,GLM$`CI.97.5 %`), title="                                       Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="                             <--HCV Progression--   --HCV Clearance-->", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
 ```
 
-### Multivariate analysis (use of likelihood ratio & wald test)
+### Multivariable analysis (use of likelihood ratio & wald test)
 ```{r, message=FALSE, warning=FALSE}
 GLM_formula <- as.formula(paste("HCV_status ~", paste(GLM_filtered$Allele, collapse = " + ")))
 LRf <- glm(GLM_formula, data = x10, family = binomial, na.action = na.exclude)
@@ -805,7 +792,7 @@ fisher_other2 <- fisher_other2[c("Variables", "odds ratio", "CI_25%", "CI_75%", 
 knitr::kable(fisher_other2[1:6, 1:5], caption = 'Odds ratios & p values')
 ```
 
-### Looking at other variables - Univariate analysis
+### Looking at other variables - Univariable analysis
 ```{r, message=FALSE, warning=FALSE}
 varnames2 <- c("hiv","Heroin_use", "Peak_bilirubin", "Genotype", "MSM", "CC_NonCC")
 
@@ -829,22 +816,20 @@ round(GLM2,3)
 GLM2 <- as.data.frame(GLM2)
 GLM2$Variables <-  c("HIV","Heroin use", "Peak bilirubin", "Genotype gt3a", "Genotype gt4d", "MSM", "IL28B SNP")
 GLM2 <- GLM2 %>% relocate(Variables, before = OR)
-GLM2 <- GLM2 %>%  mutate_if(is.numeric, round, digits = 3)
+GLM2 <- GLM2 %>%  mutate_if(is.numeric, round, digits = 2)
 
 GLM_filtered2 <- GLM2 %>% filter(p.value <= 0.25)
 print(GLM_filtered2)
-
-# CC_NCC p>0.25 so excluded from multivariate model
 ```
 
-### Looking at other variables - Univariate analysis forest plot
+### Looking at other variables - Univariable analysis forest plot
 ```{r, message=FALSE, warning=FALSE}
 tabletext2 <- cbind(c("Variables","\n",GLM2$Variable), c("P Value","\n",GLM2$p.value))
 
 forestplot(labeltext=tabletext2, graph.pos=2, mean=c(NA,NA,GLM2$OR), lower=c(NA,NA,GLM2$lwCI), upper=c(NA,NA,GLM2$upCI), title="            Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="<--HCV Progression--   --HCV Clearance-->  ", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
 ```
 
-### Looking at other variables - Multivariate analysis
+### Looking at other variables - Multivariable analysis
 ```{r, message=FALSE, warning=FALSE}
 LRf2 <- glm(HCV_status~hiv + Heroin_use + MSM + Genotype + Peak_bilirubin, family = binomial, data = dat3[-c(1)])
 summary(LRf2)
@@ -865,7 +850,6 @@ drop1(LRf2, test = "Chisq")
 library(car)
 vif <- vif(glm(HCV_status~hiv + Heroin_use + MSM + Genotype + Peak_bilirubin, family = binomial, data = dat3[-c(1)]))
 print(vif)
-# Generalized collinearity diagnostic Values are between 1 and 5 which indicates moderate correlation, but these are not severe enough to require their removal.
 ```
 
 ### Looking at other variables - Predicted probablility of clearance
@@ -905,7 +889,7 @@ newdata2 <- newdata2[,c(1:6,9)]
 knitr::kable(newdata2[1:4, 1:7], caption = 'Observed and predicted probability of HCV clearance from non-HLA variables.')
 ```
 
-###Final GLM - Data organisation
+### Final GLM - Data organisation
 ```{r, message=FALSE, warning=FALSE}
 # Final glm variables: B27, B35, hiv, MSM, bilirubin
 
@@ -920,8 +904,6 @@ dat_final_NA <- dat_final %>% filter_at(vars(-Participant_ID, -HCV_status), any_
 print(dat_final_NA)
 
 dat_final <- na.omit(dat_final)
-
-# 11 participants excluded due to incomplete data
 ```
 
 ### Final GLM - Data counts
@@ -930,7 +912,7 @@ summary(dat_final)
 str(dat_final)
 ```
 
-### Final GLM - Univariate
+### Final GLM - Univariable analysis
 ```{r, message=FALSE, warning=FALSE}
 
 varnames3 <- c("B27","B35", "MSM", "Peak_bilirubin")
@@ -957,14 +939,14 @@ GLM_filtered3 <- GLM3 %>% filter(p.value <= 0.25)
 print(GLM_filtered3)
 ```
 
-### Final GLM - Univariate analysis forest plot
+### Final GLM - Univariable analysis forest plot
 ```{r, message=FALSE, warning=FALSE}
 tabletext3 <- cbind(c("Variables","\n",GLM3$Variables), c("P Value","\n",GLM3$p.value))
 
 forestplot(labeltext=tabletext3, graph.pos=2, mean=c(NA,NA,GLM3$OR), lower=c(NA,NA,GLM3$`CI.2.5 %`), upper=c(NA,NA,GLM3$`CI.97.5 %`), title="            Odds Ratio", col=fpColors(box="black", lines="black", zero = "gray50"), zero=1, cex=0.9, lineheight = "auto", boxsize=0.5, colgap=unit(6,"mm"), lwd.ci=2, ci.vertices=TRUE, ci.vertices.height = 0.4, txt_gp=fpTxtGp(label=gpar(cex=0.8), ticks=gpar(cex=0.8), xlab=gpar(cex = 0.8), title=gpar(cex = 0.8)), xlab="         <--HCV Progression--   --HCV Clearance-->", hrzl_lines=list("3" = gpar(lwd=2, col="#99999922")),xlog = TRUE)
 ```
 
-### Final GLM - Multivariate
+### Final GLM - Multivariable analysis
 ```{r, message=FALSE, warning=FALSE}
 
 GLM_final <- glm(HCV_status ~ B27 + B35 + MSM + Peak_bilirubin, family = binomial, data = dat_final)
@@ -974,16 +956,7 @@ GLM_final <- update(GLM_final, ~.-B35)
 summary(GLM_final)
 drop1(GLM_final, test = "Chisq")
 
-vif(GLM_final) # No collinearity
-```
-
-### Final GLM - Variation explained by model (Mc Fadden's Pseudo-R-squared)
-```{r, message=FALSE, warning=FALSE}
-library(blorr)
-
-blr_rsq_mcfadden(GLM_final)
-
-# 16.4% variation explained
+vif(GLM_final)
 ```
 
 ### Final GLM - HIV interaction
@@ -994,8 +967,6 @@ table(dat_final$HCV_status,dat_final$Peak_bilirubin,dat_final$hiv)
 GLM_inter <- glm(HCV_status ~ Peak_bilirubin*hiv, family = binomial, data = dat_final)
 summary(GLM_inter)
 drop1(GLM_inter, test = "Chisq")
-
-# No significant interaction
 ```
 
 ### Final GLM - Predicted probablility of clearance
@@ -1045,7 +1016,7 @@ print(newdata3)
 #'Observed and predicted probability of HCV clearance from final GLM variables.'
 ```
 
-### Final GLM - Area under the ROC curve (AUC) - a measure of how well a parameter can distinguish between HCV outcomes (progression/clearance).
+### ROC plot
 ```{r, message=FALSE, warning=FALSE}
 library(ROCR)
 library(plotROC)
@@ -1125,6 +1096,3 @@ AUC.fn(fp$`Clearance Propability`, fp$HCV_status)
 # Plotting AUC on the ROC curve
 AUC.val <- AUC.fn(fp$`Clearance Propability`, fp$HCV_status)
 legend("bottomright", legend = paste("AUC =", round(AUC.val["AUC"], 2)))
-
-# AUC = 0.74 Acceptable discrimination, predicitons have a decent capability of distinguishing HCV outcome.
-```
